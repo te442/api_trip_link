@@ -1,0 +1,21 @@
+# Build / IDE
+bin/
+obj/
+.vs/
+.vscode/
+.cursor/
+*.user
+*.suo
+
+# Logs / dumps
+debug-*.log
+score-table-dump.txt
+
+# Angular
+trip-planner-app/node_modules/
+trip-planner-app/dist/
+trip-planner-app/.angular/
+
+# OS
+Thumbs.db
+.DS_Store

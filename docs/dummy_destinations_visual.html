@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TripLink — רשימת יעדים (דמה)</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      background: #f0f4f8;
+      color: #222;
+      direction: rtl;
+    }
+    .page { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+    .caption-for-doc {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 8px;
+      font-style: italic;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      padding: 28px 32px;
+    }
+    h1 {
+      margin: 0 0 6px;
+      color: #1976d2;
+      font-size: 1.8rem;
+    }
+    .sub { color: #666; margin: 0 0 20px; font-size: 0.95rem; }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stats span {
+      background: #e3f2fd;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .region-filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      border: 1px solid #90caf9;
+      background: #fff;
+      color: #1976d2;
+    }
+    .filter-chip.active {
+      background: #1976d2;
+      color: #fff;
+      border-color: #1976d2;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+    thead th {
+      background: #1976d2;
+      color: #fff;
+      padding: 12px 14px;
+      text-align: right;
+      font-weight: 600;
+    }
+    thead th:first-child { border-radius: 0 8px 0 0; }
+    thead th:last-child { border-radius: 8px 0 0 0; }
+    tbody tr { border-bottom: 1px solid #e8e8e8; }
+    tbody tr:hover { background: #f5f9ff; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+    tbody tr:nth-child(even):hover { background: #f0f7ff; }
+    td { padding: 11px 14px; text-align: right; }
+    .id-col { color: #888; font-weight: 600; width: 48px; }
+    .name-col { font-weight: 600; color: #1565c0; }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .region-דרום { background: #fff3e0; color: #e65100; }
+    .region-צפון { background: #e8f5e9; color: #2e7d32; }
+    .region-מרכז { background: #ede7f6; color: #5e35b1; }
+    .level-קל { background: #e8f5e9; color: #388e3c; }
+    .level-בינוני { background: #fff8e1; color: #f57f17; }
+    .level-קשה { background: #ffebee; color: #c62828; }
+    .footer-note {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.8rem;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <p class="caption-for-doc">איור — מסך רשימת יעדים (נתוני דמה)</p>
+
+    <div class="card">
+      <h1>יעדים</h1>
+      <p class="sub">קטלוג כל היעדים הזמינים במערכת TripLink</p>
+
+      <div class="stats">
+        <span>10 יעדים</span>
+        <span>4 אזורים: דרום, צפון, מרכז</span>
+        <span>3 רמות קושי</span>
+      </div>
+
+      <div class="region-filters">
+        <span class="filter-chip active">הכל</span>
+        <span class="filter-chip">דרום</span>
+        <span class="filter-chip">צפון</span>
+        <span class="filter-chip">מרכז</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>שם היעד</th>
+            <th>אזור</th>
+            <th>רמת קושי</th>
+            <th>סוג מטייל</th>
+            <th>זמן (דקות)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="id-col">1</td>
+            <td class="name-col">מצדה</td>
+            <td><span class="badge region-דרום">דרום</span></td>
+            <td><span class="badge level-בינוני">בינוני</span></td>
+            <td>יחידים</td>
+            <td>03:00</td>
+          </tr>
+          <tr>
+            <td class="id-col">2</td>
+            <td class="name-col">ים המלח - עין בוקק</td>
+            <td><span class="badge region-דרום">דרום</span></td>
+            <td><span class="badge level-קל">קל</span></td>
+            <td>משפחות</td>
+            <td>02:30</td>
+          </tr>
+          <tr>
+            <td class="id-col">3</td>
+            <td class="name-col">מכתש רמון</td>
+            <td><span class="badge region-דרום">דרום</span></td>
+            <td><span class="badge level-בינוני">בינוני</span></td>
+            <td>יחידים</td>
+            <td>04:00</td>
+          </tr>
+          <tr>
+            <td class="id-col">4</td>
+            <td class="name-col">נחל דוד - עין גדי</td>
+            <td><span class="badge region-דרום">דרום</span></td>
+            <td><span class="badge level-בינוני">בינוני</span></td>
+            <td>משפחות</td>
+            <td>03:00</td>
+          </tr>
+          <tr>
+            <td class="id-col">5</td>
+            <td class="name-col">הכנרת - טבריה</td>
+            <td><span class="badge region-צפון">צפון</span></td>
+            <td><span class="badge level-קל">קל</span></td>
+            <td>משפחות</td>
+            <td>02:00</td>
+          </tr>
+          <tr>
+            <td class="id-col">6</td>
+            <td class="name-col">נחל עמוד</td>
+            <td><span class="badge region-צפון">צפון</span></td>
+            <td><span class="badge level-בינוני">בינוני</span></td>
+            <td>יחידים</td>
+            <td>03:30</td>
+          </tr>
+          <tr>
+            <td class="id-col">7</td>
+            <td class="name-col">הר מירון</td>
+            <td><span class="badge region-צפון">צפון</span></td>
+            <td><span class="badge level-קשה">קשה</span></td>
+            <td>יחידים</td>
+            <td>05:00</td>
+          </tr>
+          <tr>
+            <td class="id-col">8</td>
+            <td class="name-col">קיסריה</td>
+            <td><span class="badge region-מרכז">מרכז</span></td>
+            <td><span class="badge level-קל">קל</span></td>
+            <td>זוגות</td>
+            <td>02:30</td>
+          </tr>
+          <tr>
+            <td class="id-col">9</td>
+            <td class="name-col">נמל יפו</td>
+            <td><span class="badge region-מרכז">מרכז</span></td>
+            <td><span class="badge level-קל">קל</span></td>
+            <td>זוגות</td>
+            <td>02:00</td>
+          </tr>
+          <tr>
+            <td class="id-col">10</td>
+            <td class="name-col">ירושלים - עיר עתיקה</td>
+            <td><span class="badge region-מרכז">מרכז</span></td>
+            <td><span class="badge level-קל">קל</span></td>
+            <td>קבוצות</td>
+            <td>04:00</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="footer-note">TripLink — תצוגת דמה לספר פרויקט | מסך /destinations</p>
+  </div>
+</body>
+</html>

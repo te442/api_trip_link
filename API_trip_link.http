@@ -1,0 +1,6 @@
+@API_trip_link_HostAddress = http://localhost:5023
+
+GET {{API_trip_link_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

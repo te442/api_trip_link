@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TripLink — תרשים EDR</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      background: #f0f4f8;
+      color: #222;
+      direction: rtl;
+    }
+    .page { max-width: 100%; padding: 20px 16px 32px; }
+    .caption-for-doc {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 8px;
+      font-style: italic;
+    }
+    h1 {
+      text-align: center;
+      color: #1976d2;
+      margin: 0 0 4px;
+      font-size: 1.6rem;
+    }
+    .sub {
+      text-align: center;
+      color: #666;
+      margin: 0 0 16px;
+      font-size: 0.9rem;
+    }
+    .diagram-wrap {
+      overflow: auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      padding: 12px;
+    }
+    .erd-svg { display: block; min-width: 1680px; }
+    .legend {
+      margin-top: 20px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      font-size: 0.85rem;
+    }
+    .legend h3 { margin: 0 0 10px; color: #1976d2; grid-column: 1 / -1; }
+    .legend-item { display: flex; align-items: center; gap: 10px; }
+    .swatch {
+      width: 28px;
+      height: 18px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .swatch-entity { background: #e3f2fd; border: 2px solid #1976d2; }
+    .swatch-junction { background: #f5f5f5; border: 2px dashed #888; }
+    .swatch-zone { background: #fafafa; border: 1px solid #ccc; }
+    .notes {
+      margin-top: 16px;
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .notes strong { color: #e65100; }
+    .footer-note {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 0.8rem;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <p class="caption-for-doc">איור — תרשים ישויות-קשרים (EDR)</p>
+    <h1>תרשים EDR — מערכת TripLink</h1>
+    <p class="sub">17 ישויות | מפתחות ראשיים, זרים וקשרי כמות (1:N, M:N)</p>
+
+    <div class="diagram-wrap">
+      <svg class="erd-svg" viewBox="0 0 1680 980" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="crowMany" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+            <path d="M0,0 L10,5 L0,10 M5,0 L5,10" fill="none" stroke="#555" stroke-width="1.2"/>
+          </marker>
+          <marker id="crowOne" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+            <line x1="4" y1="0" x2="4" y2="8" stroke="#555" stroke-width="1.5"/>
+          </marker>
+        </defs>
+
+        <!-- Zone backgrounds -->
+        <rect x="15" y="45" width="500" height="400" rx="8" fill="#fafafa" stroke="#ccc" stroke-width="1"/>
+        <text x="265" y="68" text-anchor="middle" fill="#555" font-size="13" font-weight="bold">משתמשים וטיולים</text>
+
+        <rect x="530" y="45" width="520" height="400" rx="8" fill="#fafafa" stroke="#ccc" stroke-width="1"/>
+        <text x="790" y="68" text-anchor="middle" fill="#555" font-size="13" font-weight="bold">יעדים ומאפיינים</text>
+
+        <rect x="15" y="465" width="1035" height="300" rx="8" fill="#fafafa" stroke="#ccc" stroke-width="1"/>
+        <text x="532" y="488" text-anchor="middle" fill="#555" font-size="13" font-weight="bold">תחבורה ציבורית</text>
+
+        <rect x="1070" y="45" width="595" height="720" rx="8" fill="#f9f9f9" stroke="#ddd" stroke-width="1" stroke-dasharray="6,4"/>
+        <text x="1367" y="68" text-anchor="middle" fill="#777" font-size="12" font-weight="bold">טבלאות קישור (M:N)</text>
+
+        <!-- Helper: entity box template via groups -->
+
+        <!-- Users -->
+        <g id="entity-users">
+          <rect x="40" y="90" width="155" height="95" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+          <text x="117" y="110" text-anchor="middle" fill="#1565c0" font-size="12" font-weight="bold">Users</text>
+          <line x1="40" y1="118" x2="195" y2="118" stroke="#90caf9"/>
+          <text x="50" y="134" fill="#333" font-size="10"><tspan font-weight="bold">user_id</tspan> PK</text>
+          <text x="50" y="148" fill="#333" font-size="10">FullName, Phon</text>
+          <text x="50" y="162" fill="#333" font-size="10">Email, PasswordHash</text>
+        </g>
+
+        <!-- Trip -->
+        <g id="entity-trip">
+          <rect x="40" y="220" width="175" height="130" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+          <text x="127" y="240" text-anchor="middle" fill="#1565c0" font-size="12" font-weight="bold">Trip</text>
+          <line x1="40" y1="248" x2="215" y2="248" stroke="#90caf9"/>
+          <text x="50" y="264" fill="#333" font-size="10"><tspan font-weight="bold">Trip_id</tspan> PK</text>
+          <text x="50" y="278" fill="#333" font-size="10">Trip_name, Trip_Date</text>
+          <text x="50" y="292" fill="#333" font-size="10">user_id (FK)</text>
+          <text x="50" y="306" fill="#333" font-size="10">Address_start</text>
+          <text x="50" y="320" fill="#333" font-size="10">Start_time, End_time</text>
+          <text x="50" y="334" fill="#333" font-size="10">trip_cost</text>
+        </g>
+
+        <!-- Nature_trip -->
+        <g id="entity-nature">
+          <rect x="40" y="380" width="175" height="115" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+          <text x="127" y="400" text-anchor="middle" fill="#1565c0" font-size="12" font-weight="bold">Nature_trip</text>
+          <line x1="40" y1="408" x2="215" y2="408" stroke="#90caf9"/>
+          <text x="50" y="424" fill="#333" font-size="10"><tspan font-weight="bold">natureTrip_id</tspan> PK</text>
+          <text x="50" y="438" fill="#333" font-size="10">trip_id (FK)</text>
+          <text x="50" y="452" fill="#333" font-size="10">Min_num_des, Max_num_des</text>
+          <text x="50" y="466" fill="#333" font-size="10">level_id (FK), Region</text>
+          <text x="50" y="480" fill="#333" font-size="10">Num_break</text>
+        </g>
+
+        <!-- Difficulty_level -->
+        <g id="entity-level">
+          <rect x="550" y="90" width="160" height="70" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+          <text x="630" y="110" text-anchor="middle" fill="#1565c0" font-size="12" font-weight="bold">Difficulty_level</text>
+          <line x1="550" y1="118" x2="710" y2="118" stroke="#90caf9"/>
+          <text x="560" y="134" fill="#333" font-size="10"><tspan font-weight="bold">level_id</tspan> PK</text>
+          <text x="560" y="148" fill="#333" font-size="10">level_type</text>
+        </g>
+
+        <!-- TypeTraveler -->
+        <g id="entity-traveler">
+          <rect x="730" y="90" width="155" height="70" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+          <text x="807" y="110" text-anchor="middle" fill="#1565c0" font-size="12" font-weight="bold">TypeTraveler</text>
+          <line x1="730" y1="118" x2="885" y2="118" stroke="#90caf9"/>
+          <text x="740" y="134" fill="#333" font-size="10"><tspan font-weight="bold">Traveler_id</tspan> PK</text>
+          <text x="740" y="148" fill="#333" font-size="10">TypeTraveler</text>
+        </g>
+
+        <!-- Categories -->
+        <g id="entity-categories">
+          <rect x="550" y="190" width="155" height="70" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+          <text x="627" y="210" text-anchor="middle" fill="#1565c0" font-size="12" font-weight="bold">Categories</text>
+          <line x1="550" y1="218" x2="705" y2="218" stroke="#90caf9"/>
+          <text x="560" y="234" fill="#333" font-size="10"><tspan font-weight="bold">categories_id</tspan> PK</text>
+          <text x="560" y="248" fill="#333" font-size="10">categories_name</text>
+        </g>
+
+        <!-- FeatureTypes -->
+        <g id="entity-features">
+          <rect x="730" y="190" width="155" height="70" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+          <text x="807" y="210" text-anchor="middle" fill="#1565c0" font-size="12" font-weight="bold">FeatureTypes</text>
+          <line x1="730" y1="218" x2="885" y2="218" stroke="#90caf9"/>
+          <text x="740" y="234" fill="#333" font-size="10"><tspan font-weight="bold">Feature_id</tspan> PK</text>
+          <text x="740" y="248" fill="#333" font-size="10">Feature</text>
+        </g>
+
+        <!-- Destination -->
+        <g id="entity-destination">
+          <rect x="620" y="300" width="195" height="130" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+          <text x="717" y="320" text-anchor="middle" fill="#1565c0" font-size="12" font-weight="bold">Destination</text>
+          <line x1="620" y1="328" x2="815" y2="328" stroke="#90caf9"/>
+          <text x="630" y="344" fill="#333" font-size="10"><tspan font-weight="bold">Des_id</tspan> PK</text>
+          <text x="630" y="358" fill="#333" font-size="10">Name_des, Rregion</text>
+          <text x="630" y="372" fill="#333" font-size="10">level_id (FK), Traveler_id (FK)</text>
+          <text x="630" y="386" fill="#333" font-size="10">Time_des, lat, lon</text>
+          <text x="630" y="400" fill="#333" font-size="10">image_url</text>
+        </g>
+
+        <!-- DestinationFeatures -->
+        <g id="entity-destfeat">
+          <rect x="850" y="300" width="175" height="70" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+          <text x="937" y="320" text-anchor="middle" fill="#1565c0" font-size="12" font-weight="bold">DestinationFeatures</text>
+          <line x1="850" y1="328" x2="1025" y2="328" stroke="#90caf9"/>
+          <text x="860" y="344" fill="#333" font-size="10"><tspan font-weight="bold">Feature_id</tspan> PK</text>
+          <text x="860" y="358" fill="#333" font-size="10">topical_id</text>
+        </g>
+
+        <!-- Agency -->
+        <g id="entity-agency">
+          <rect x="40" y="520" width="165" height="85" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+          <text x="122" y="540" text-anchor="middle" fill="#1565c0" font-size="12" font-weight="bold">Agency *</text>
+          <line x1="40" y1="548" x2="205" y2="548" stroke="#90caf9"/>
+          <text x="50" y="564" fill="#333" font-size="10"><tspan font-weight="bold">agency_id</tspan> PK</text>
+          <text x="50" y="578" fill="#333" font-size="10">agency_name, phon</text>
+          <text x="50" y="592" fill="#333" font-size="10">external_agency_id</text>
+        </g>
+
+        <!-- Bus -->
+        <g id="entity-bus">
+          <rect x="240" y="520" width="175" height="115" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+          <text x="327" y="540" text-anchor="middle" fill="#1565c0" font-size="12" font-weight="bold">Bus</text>
+          <line x1="240" y1="548" x2="415" y2="548" stroke="#90caf9"/>
+          <text x="250" y="564" fill="#333" font-size="10"><tspan font-weight="bold">bus_id</tspan> PK</text>
+          <text x="250" y="578" fill="#333" font-size="10">Bus_code, Bus_number</text>
+          <text x="250" y="592" fill="#333" font-size="10">agency_id (FK)</text>
+          <text x="250" y="606" fill="#333" font-size="10">Direction</text>
+          <text x="250" y="620" fill="#333" font-size="10">government_route_id</text>
+        </g>
+
+        <!-- Station -->
+        <g id="entity-station">
+          <rect x="680" y="520" width="185" height="115" rx="4" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+          <text x="772" y="540" text-anchor="middle" fill="#1565c0" font-size="12" font-weight="bold">Station</text>
+          <line x1="680" y1="548" x2="865" y2="548" stroke="#90caf9"/>
+          <text x="690" y="564" fill="#333" font-size="10"><tspan font-weight="bold">Station_num</tspan> PK</text>
+          <text x="690" y="578" fill="#333" font-size="10">Station_name, Statoin_code</text>
+          <text x="690" y="592" fill="#333" font-size="10">area, lat, lon</text>
+          <text x="690" y="606" fill="#333" font-size="10">government_stop_id</text>
+        </g>
+
+        <!-- Junction: Des_of_trip -->
+        <g id="junction-desoftrip">
+          <rect x="1090" y="100" width="175" height="85" rx="4" fill="#f5f5f5" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <text x="1177" y="120" text-anchor="middle" fill="#555" font-size="11" font-weight="bold">Des_of_trip</text>
+          <line x1="1090" y1="128" x2="1265" y2="128" stroke="#bbb"/>
+          <text x="1100" y="144" fill="#333" font-size="10"><tspan font-weight="bold">Trip_id</tspan> PK,FK</text>
+          <text x="1100" y="158" fill="#333" font-size="10"><tspan font-weight="bold">Des_id</tspan> PK,FK</text>
+          <text x="1100" y="172" fill="#333" font-size="10">visit_number</text>
+        </g>
+
+        <!-- Junction: Categories_to_trip -->
+        <g id="junction-cattrip">
+          <rect x="1290" y="100" width="195" height="75" rx="4" fill="#f5f5f5" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <text x="1387" y="120" text-anchor="middle" fill="#555" font-size="11" font-weight="bold">Categories_to_trip</text>
+          <line x1="1290" y1="128" x2="1485" y2="128" stroke="#bbb"/>
+          <text x="1300" y="144" fill="#333" font-size="10"><tspan font-weight="bold">categories_id</tspan> PK,FK</text>
+          <text x="1300" y="158" fill="#333" font-size="10"><tspan font-weight="bold">Trip_id</tspan> PK,FK</text>
+        </g>
+
+        <!-- Junction: Feature_to_trip -->
+        <g id="junction-featrip">
+          <rect x="1090" y="210" width="175" height="75" rx="4" fill="#f5f5f5" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <text x="1177" y="230" text-anchor="middle" fill="#555" font-size="11" font-weight="bold">Feature_to_trip</text>
+          <line x1="1090" y1="238" x2="1265" y2="238" stroke="#bbb"/>
+          <text x="1100" y="254" fill="#333" font-size="10"><tspan font-weight="bold">Feature_id</tspan> PK,FK</text>
+          <text x="1100" y="268" fill="#333" font-size="10"><tspan font-weight="bold">trip_id</tspan> FK</text>
+        </g>
+
+        <!-- Junction: Categories_of_Destination -->
+        <g id="junction-catdest">
+          <rect x="1290" y="210" width="210" height="75" rx="4" fill="#f5f5f5" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <text x="1395" y="230" text-anchor="middle" fill="#555" font-size="11" font-weight="bold">Categories_of_Destination</text>
+          <line x1="1290" y1="238" x2="1500" y2="238" stroke="#bbb"/>
+          <text x="1300" y="254" fill="#333" font-size="10"><tspan font-weight="bold">categories_id</tspan> PK,FK</text>
+          <text x="1300" y="268" fill="#333" font-size="10"><tspan font-weight="bold">Des_id</tspan> PK,FK</text>
+        </g>
+
+        <!-- Junction: bus_station -->
+        <g id="junction-busstation">
+          <rect x="1090" y="520" width="165" height="75" rx="4" fill="#f5f5f5" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <text x="1172" y="540" text-anchor="middle" fill="#555" font-size="11" font-weight="bold">bus_station</text>
+          <line x1="1090" y1="548" x2="1255" y2="548" stroke="#bbb"/>
+          <text x="1100" y="564" fill="#333" font-size="10"><tspan font-weight="bold">bus_id</tspan> PK,FK</text>
+          <text x="1100" y="578" fill="#333" font-size="10"><tspan font-weight="bold">station_id</tspan> PK,FK</text>
+        </g>
+
+        <!-- Junction: station_to_destination -->
+        <g id="junction-stdest">
+          <rect x="1290" y="500" width="210" height="115" rx="4" fill="#f5f5f5" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <text x="1395" y="520" text-anchor="middle" fill="#555" font-size="11" font-weight="bold">station_to_destination</text>
+          <line x1="1290" y1="528" x2="1500" y2="528" stroke="#bbb"/>
+          <text x="1300" y="544" fill="#333" font-size="10"><tspan font-weight="bold">Des_id</tspan> PK,FK</text>
+          <text x="1300" y="558" fill="#333" font-size="10"><tspan font-weight="bold">Station_num</tspan> PK,FK</text>
+          <text x="1300" y="572" fill="#333" font-size="10">Walking_distance, Walking time</text>
+          <text x="1300" y="586" fill="#333" font-size="10">Direction_Type, instructions</text>
+        </g>
+
+        <!-- Relationship lines -->
+        <!-- Users 1 -- N Trip -->
+        <line x1="117" y1="185" x2="117" y2="220" stroke="#555" stroke-width="1.5" marker-end="url(#crowMany)"/>
+        <text x="125" y="205" fill="#1976d2" font-size="10" font-weight="bold">1</text>
+        <text x="95" y="215" fill="#1976d2" font-size="10" font-weight="bold">N</text>
+
+        <!-- Trip 1 -- N Nature_trip -->
+        <line x1="127" y1="350" x2="127" y2="380" stroke="#555" stroke-width="1.5" marker-end="url(#crowMany)"/>
+        <text x="135" y="368" fill="#1976d2" font-size="10" font-weight="bold">1</text>
+        <text x="105" y="375" fill="#1976d2" font-size="10" font-weight="bold">N</text>
+
+        <!-- Trip -- Des_of_trip -->
+        <line x1="215" y1="270" x2="1090" y2="142" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+        <text x="400" y="195" fill="#1976d2" font-size="9">M:N</text>
+
+        <!-- Destination -- Des_of_trip -->
+        <line x1="815" y1="350" x2="1090" y2="155" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+
+        <!-- Trip -- Categories_to_trip -->
+        <line x1="215" y1="250" x2="1290" y2="137" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+
+        <!-- Categories -- Categories_to_trip -->
+        <line x1="705" y1="225" x2="1290" y2="125" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+
+        <!-- Trip -- Feature_to_trip -->
+        <line x1="215" y1="290" x2="1090" y2="247" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+
+        <!-- FeatureTypes -- Feature_to_trip -->
+        <line x1="885" y1="235" x2="1090" y2="235" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+
+        <!-- Destination -- Categories_of_Destination -->
+        <line x1="815" y1="340" x2="1290" y2="247" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+
+        <!-- Categories -- Categories_of_Destination -->
+        <line x1="680" y1="240" x2="1290" y2="230" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+
+        <!-- Difficulty_level -- Destination -->
+        <line x1="630" y1="160" x2="680" y2="330" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+        <text x="640" y="250" fill="#1976d2" font-size="9">1:N</text>
+
+        <!-- TypeTraveler -- Destination -->
+        <line x1="807" y1="160" x2="750" y2="300" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+
+        <!-- Difficulty_level -- Nature_trip -->
+        <line x1="630" y1="160" x2="215" y2="420" stroke="#555" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#crowMany)"/>
+
+        <!-- Agency -- Bus -->
+        <line x1="205" y1="562" x2="240" y2="577" stroke="#555" stroke-width="1.5" marker-end="url(#crowMany)"/>
+        <text x="215" y="555" fill="#1976d2" font-size="10" font-weight="bold">1:N</text>
+
+        <!-- Bus -- bus_station -->
+        <line x1="415" y1="577" x2="1090" y2="557" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+
+        <!-- Station -- bus_station -->
+        <line x1="865" y1="577" x2="1255" y2="557" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+
+        <!-- Destination -- station_to_destination -->
+        <line x1="717" y1="430" x2="1290" y2="540" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+        <text x="950" y="480" fill="#1976d2" font-size="9">M:N</text>
+
+        <!-- Station -- station_to_destination -->
+        <line x1="772" y1="635" x2="1290" y2="580" stroke="#555" stroke-width="1.2" marker-end="url(#crowMany)"/>
+
+        <!-- Summary table bottom -->
+        <rect x="15" y="790" width="1650" height="175" rx="6" fill="#fff" stroke="#ddd"/>
+        <text x="840" y="815" text-anchor="middle" fill="#1976d2" font-size="13" font-weight="bold">סיכום קשרים עיקריים</text>
+        <text x="40" y="840" fill="#333" font-size="10">Users (1) ──→ (N) Trip</text>
+        <text x="40" y="858" fill="#333" font-size="10">Trip (M) ←→ (N) Destination  דרך Des_of_trip</text>
+        <text x="40" y="876" fill="#333" font-size="10">Trip (M) ←→ (N) Categories  דרך Categories_to_trip</text>
+        <text x="40" y="894" fill="#333" font-size="10">Trip (M) ←→ (N) FeatureTypes  דרך Feature_to_trip</text>
+        <text x="40" y="912" fill="#333" font-size="10">Trip (1) ──→ (N) Nature_trip ──→ Difficulty_level</text>
+        <text x="40" y="930" fill="#333" font-size="10">Destination (N) ──→ Difficulty_level, TypeTraveler</text>
+        <text x="40" y="948" fill="#333" font-size="10">Destination (M) ←→ (N) Categories  דרך Categories_of_Destination</text>
+
+        <text x="560" y="840" fill="#333" font-size="10">Destination (M) ←→ (N) Station  דרך station_to_destination</text>
+        <text x="560" y="858" fill="#333" font-size="10">Agency (1) ──→ (N) Bus (M) ←→ (N) Station  דרך bus_station</text>
+        <text x="560" y="876" fill="#333" font-size="10">סה"כ: 11 ישויות עיקריות + 6 טבלאות קישור M:N</text>
+        <text x="560" y="894" fill="#666" font-size="9">* Agency — קיימת ב-SQL, לא ממופה ב-TripContext</text>
+        <text x="560" y="912" fill="#666" font-size="9">DestinationFeatures — DbSet ב-EF ללא FK מוגדר ל-Destination</text>
+        <text x="560" y="930" fill="#666" font-size="9">Feature_to_trip — מפתח מורכב (Feature_id, trip_id) לפי מבנה הטבלה</text>
+      </svg>
+    </div>
+
+    <div class="legend">
+      <h3>מקרא</h3>
+      <div class="legend-item"><span class="swatch swatch-entity"></span> ישות (Entity) — מלבן כחול מלא</div>
+      <div class="legend-item"><span class="swatch swatch-junction"></span> טבלת קישור M:N — מלבן מקווקו אפור</div>
+      <div class="legend-item"><span class="swatch swatch-zone"></span> אזור לוגי במערכת</div>
+      <div class="legend-item"><strong>PK</strong> — מפתח ראשי &nbsp;|&nbsp; <strong>FK</strong> — מפתח זר</div>
+      <div class="legend-item">1:N — קשר אחד לרבים &nbsp;|&nbsp; M:N — קשר רבים לרבים (דרך טבלת קישור)</div>
+      <div class="legend-item">קו עם סימן &gt; — צד "רבים" (Crow's Foot)</div>
+    </div>
+
+    <div class="notes">
+      <strong>הערות אקדמיות:</strong>
+      (1) טבלת <strong>Agency</strong> קיימת ב-SQL Server ([SeedData.sql]) אך לא רשומה ב-<strong>TripContext</strong> — ה-FK מ-Bus.agency_id מוצג לוגית.
+      (2) <strong>DestinationFeatures</strong> — DbSet קיים ב-EF ללא הגדרת FK ל-Destination ב-OnModelCreating.
+      (3) <strong>Feature_to_trip</strong> — במודל C# רק Feature_id מסומן כ-PK; בתרשים מוצג מפתח מורכב לפי מבנה הטבלה.
+    </div>
+
+    <p class="footer-note">TripLink — תרשים EDR לספר פרויקט | מבוסס על TripContext.cs ו-SeedData.sql</p>
+  </div>
+</body>
+</html>
