@@ -1,8 +1,12 @@
+using API_trip_link.Settings;
+
 namespace API_trip_link.Middleware
 {
     /// <summary>Rejects inbound requests that did not arrive over HTTPS.</summary>
     public sealed class HttpsOnlyMiddleware
     {
+        //מחלקה זו בודקת את הבקשות המגיעות לשרת וחוסמת אותן אם הן לא מגיעות באמצעות פרוטוקול HTTPS
+
         private readonly RequestDelegate _next;
 
         public HttpsOnlyMiddleware(RequestDelegate next) => _next = next;
@@ -12,7 +16,7 @@ namespace API_trip_link.Middleware
             if (!context.Request.IsHttps)
             {
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                await context.Response.WriteAsync("HTTPS is required.");
+                await context.Response.WriteAsync(Configuration.Api.HttpsRequiredMessage);
                 return;
             }
 

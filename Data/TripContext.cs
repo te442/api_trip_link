@@ -3,11 +3,13 @@ using API_trip_link.Models;
 
 namespace API_trip_link.Data
 {
+    //מחלקה האחראית על העברת הנתונים ושליחתם למסד נתונים 
+    //מחלקה זו בעצם המרגמת בין c# ל sql
     public class TripContext : DbContext
     {
         public TripContext(DbContextOptions<TripContext> options) : base(options) { }
-
         // ─── DbSets ───────────────────────────────────────────────────────────────
+        //טבלאות המסד הנתונים
         public DbSet<Destination>             Destinations             { get; set; }
         public DbSet<DifficultyLevel>         DifficultyLevels         { get; set; }
         public DbSet<TypeTraveler>            TypeTravelers            { get; set; }
@@ -150,6 +152,23 @@ namespace API_trip_link.Data
                 .HasOne(n => n.DifficultyLevel)
                 .WithMany(dl => dl.NatureTrips)
                 .HasForeignKey(n => n.LevelId);
+
+            modelBuilder.Entity<Destination>(entity =>
+            {
+                entity.Property(d => d.Lat).HasPrecision(9, 6);
+                entity.Property(d => d.Lon).HasPrecision(9, 6);
+            });
+
+            modelBuilder.Entity<Station>(entity =>
+            {
+                entity.Property(s => s.Lat).HasPrecision(9, 6);
+                entity.Property(s => s.Lon).HasPrecision(9, 6);
+            });
+
+            modelBuilder.Entity<Trip>(entity =>
+            {
+                entity.Property(t => t.TripCost).HasPrecision(18, 2);
+            });
         }
     }
 }

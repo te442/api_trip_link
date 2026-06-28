@@ -18,6 +18,7 @@ namespace API_trip_link.Models
         public string?              Narrative           { get; set; }
 
         public List<TripLegDto>     Legs                { get; set; } = new();
+        public TripLegDto?          ReturnLeg           { get; set; }
         public List<MapPointDto>    MapPoints           { get; set; } = new();
         public int                  TripId              { get; set; }
         public string?              TripName            { get; set; }

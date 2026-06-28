@@ -1,7 +1,9 @@
+using API_trip_link.Settings;
 using API_trip_link.Models;
 
 namespace API_trip_link.Services.Optimizer
 {
+    //פעולה שממירה את תוצאת האופטמזציה למבנים המתאימים
     internal static class OptimizeResultMapper
     {
         public static OptimizeResultDto Map(OptimizationContext ctx)
@@ -25,16 +27,24 @@ namespace API_trip_link.Services.Optimizer
                 FromDestinationId  = a.FromDestinationId,
                 ToDestinationId    = a.ToDestinationId,
                 BestDepartureTime  = a.BestDepartureTime,
-                BusTransitHours    = Math.Round(a.BusTransitHours, 4),
-                CarTransitHours    = Math.Round(a.CarTransitHours, 4),
-                WalkingHours       = Math.Round(a.WalkingHours, 4),
-                TotalArcHours      = Math.Round(a.TotalArcHours, 4),
-                TransitEfficiency  = Math.Round(a.TransitEfficiency, 4),
+                BusTransitHours    = Math.Round(a.BusTransitHours, Configuration.Optimizer.OptimizeResultDecimalPlaces),
+                CarTransitHours    = Math.Round(a.CarTransitHours, Configuration.Optimizer.OptimizeResultDecimalPlaces),
+                WalkingHours       = Math.Round(a.WalkingHours, Configuration.Optimizer.OptimizeResultDecimalPlaces),
+                TotalArcHours      = Math.Round(a.TotalArcHours, Configuration.Optimizer.OptimizeResultDecimalPlaces),
+                TransitEfficiency  = Math.Round(a.TransitEfficiency, Configuration.Optimizer.OptimizeResultDecimalPlaces),
                 HasDirectBus       = a.HasDirectBus
             }).ToList();
 
             var legs      = MapLegs(plan.Legs, destLookup, ctx);
-            var mapPoints = BuildMapPoints(ctx.Params.AddressStart, legs, destLookup);
+            var returnLeg = plan.ReturnLeg != null
+                ? MapLeg(plan.ReturnLeg, destLookup)
+                : null;
+            var mapPoints = BuildMapPoints(
+                ctx.Params.AddressStart,
+                ctx.Params.StartLatitude,
+                ctx.Params.StartLongitude,
+                legs,
+                destLookup);
             var scoreStats = BuildScoreTableStats(ctx);
 
             return new OptimizeResultDto
@@ -43,14 +53,15 @@ namespace API_trip_link.Services.Optimizer
                 TripName          = ctx.TripName,
                 AddressStart      = ctx.Params.AddressStart,
                 DestinationCount  = bestRoute.Destinations.Count,
-                TotalScore        = Math.Round(bestRoute.TotalScore, 4),
-                TimeUsed          = Math.Round(bestRoute.TotalTime, 4),
+                TotalScore        = Math.Round(bestRoute.TotalScore, Configuration.Optimizer.OptimizeResultDecimalPlaces),
+                TimeUsed          = Math.Round(bestRoute.TotalTime, Configuration.Optimizer.OptimizeResultDecimalPlaces),
                 TimeAvailable     = ctx.Params.MaxTimeFrame,
-                TransitEfficiency = Math.Round(bestRoute.TransitEfficiency, 4),
+                TransitEfficiency = Math.Round(bestRoute.TransitEfficiency, Configuration.Optimizer.OptimizeResultDecimalPlaces),
                 OptimalRoute      = resultDests,
                 ArcCosts          = arcCostDtos,
                 Narrative         = plan.Narrative,
                 Legs              = legs,
+                ReturnLeg         = returnLeg,
                 MapPoints         = mapPoints,
                 ScoreTableStats   = scoreStats,
                 ScoreTableCellTrace = ctx.ScoreTableCellTrace
@@ -62,15 +73,16 @@ namespace API_trip_link.Services.Optimizer
             if (ctx.ScoreTable == null) return null;
             var (total, valid) = ctx.ScoreTable.GetStats();
             var n = ctx.ScoreTable.NodeCount;
-            var h = ctx.ScoreTable.HourCount;
+            var m = ctx.ScoreTable.MinuteCount;
             return new ScoreTableStatsDto
             {
                 NodeCount   = n,
-                HourCount   = h,
+                MinuteCount = m,
+                HourCount   = m,
                 TotalCells  = total,
                 ValidCells  = valid,
-                ValidRatio  = total > 0 ? Math.Round((double)valid / total, 3) : 0,
-                Description = $"טבלה תלת-מימדית {n}×{n}×{h} (מקור×יעד×שעה)"
+                ValidRatio  = total > 0 ? Math.Round((double)valid / total, Configuration.Optimizer.ValidRatioDecimalPlaces) : 0,
+                Description = $"Event store דליל: {total} אירועי תחבורה מתוך קיבולת לוגית {ctx.ScoreTable.GetLogicalCellCapacity()}"
             };
         }
 
@@ -86,6 +98,7 @@ namespace API_trip_link.Services.Optimizer
             TransitEfficiency = result.TransitEfficiency,
             Narrative         = result.Narrative,
             Legs              = result.Legs,
+            ReturnLeg         = result.ReturnLeg,
             MapPoints         = result.MapPoints
         };
 
@@ -94,66 +107,68 @@ namespace API_trip_link.Services.Optimizer
             Dictionary<int, OptimizerDestination> destLookup,
             OptimizationContext ctx)
         {
-            return legs.Select(leg =>
-            {
-                destLookup.TryGetValue(leg.DesId, out var dest);
-                var dbDest = ctx.Destinations.FirstOrDefault(d => d.DestinationId == leg.DesId);
+            return legs.Select(leg => MapLeg(leg, destLookup)).ToList();
+        }
 
-                return new TripLegDto
+        private static TripLegDto MapLeg(
+            TripLeg leg,
+            Dictionary<int, OptimizerDestination> destLookup)
+        {
+            destLookup.TryGetValue(leg.DesId, out var dest);
+
+            return new TripLegDto
+            {
+                Order           = leg.Order,
+                DesId           = leg.DesId,
+                DestinationName = leg.DestinationName,
+                Region          = leg.Region,
+                Lat             = dest?.Latitude,
+                Lon             = dest?.Longitude,
+                ImageUrl        = null,
+                ArrivalTime     = leg.ArrivalTime.ToString("HH:mm"),
+                DepartureTime   = leg.DepartureTime.ToString("HH:mm"),
+                StayDuration    = FormatDuration(leg.StayDuration),
+                Transit         = new TransitSegmentDto
                 {
-                    Order           = leg.Order,
-                    DesId           = leg.DesId,
-                    DestinationName = leg.DestinationName,
-                    Region          = leg.Region,
-                    Lat             = dest?.Latitude,
-                    Lon             = dest?.Longitude,
-                    ImageUrl        = null,
-                    ArrivalTime     = leg.ArrivalTime.ToString("HH:mm"),
-                    DepartureTime   = leg.DepartureTime.ToString("HH:mm"),
-                    StayDuration    = FormatDuration(leg.StayDuration),
-                    Transit         = new TransitSegmentDto
+                    FromLabel         = leg.Transit.FromLabel,
+                    BoardingStation   = leg.Transit.BoardingStation?.StationName,
+                    AlightingStation  = leg.Transit.AlightingStation?.StationName,
+                    WalkingMinutes    = leg.Transit.WalkingMinutes,
+                    DepartureTime     = leg.Transit.DepartureTime.ToString("HH:mm"),
+                    ArrivalTime       = leg.Transit.ArrivalTime.ToString("HH:mm"),
+                    TransitEfficiency = leg.Transit.TransitEfficiency,
+                    BusLines          = leg.Transit.BusLines.Select(b => new BusLineDto
                     {
-                        FromLabel         = leg.Transit.FromLabel,
-                        BoardingStation   = leg.Transit.BoardingStation?.StationName,
-                        AlightingStation  = leg.Transit.AlightingStation?.StationName,
-                        WalkingMinutes    = leg.Transit.WalkingMinutes,
-                        DepartureTime     = leg.Transit.DepartureTime.ToString("HH:mm"),
-                        ArrivalTime       = leg.Transit.ArrivalTime.ToString("HH:mm"),
-                        TransitEfficiency = leg.Transit.TransitEfficiency,
-                        BusLines          = leg.Transit.BusLines.Select(b => new BusLineDto
-                        {
-                            BusNumber     = b.BusNumber,
-                            Direction     = b.Direction,
-                            FromStation   = b.FromStation,
-                            ToStation     = b.ToStation,
-                            DepartureTime = b.DepartureTime.ToString("HH:mm"),
-                            ArrivalTime   = b.ArrivalTime.ToString("HH:mm")
-                        }).ToList()
-                    }
-                };
-            }).ToList();
+                        BusNumber     = b.BusNumber,
+                        Direction     = b.Direction,
+                        VehicleType   = b.VehicleType,
+                        FromStation   = b.FromStation,
+                        ToStation     = b.ToStation,
+                        DepartureTime = b.DepartureTime != default ? b.DepartureTime.ToString("HH:mm") : "",
+                        ArrivalTime   = b.ArrivalTime != default ? b.ArrivalTime.ToString("HH:mm") : ""
+                    }).ToList()
+                }
+            };
         }
 
         private static List<MapPointDto> BuildMapPoints(
             string addressStart,
+            double startLatitude,
+            double startLongitude,
             List<TripLegDto> legs,
             Dictionary<int, OptimizerDestination> destLookup)
         {
             var points = new List<MapPointDto>();
 
-            if (legs.Count > 0 && destLookup.Count > 0)
+            if (legs.Count > 0 && (startLatitude != 0 || startLongitude != 0))
             {
-                var first = destLookup.Values.First();
-                if (first.Latitude != 0 || first.Longitude != 0)
+                points.Add(new MapPointDto
                 {
-                    points.Add(new MapPointDto
-                    {
-                        Order = 0,
-                        Label = addressStart,
-                        Lat   = first.Latitude,
-                        Lon   = first.Longitude
-                    });
-                }
+                    Order = 0,
+                    Label = addressStart,
+                    Lat   = startLatitude,
+                    Lon   = startLongitude
+                });
             }
 
             foreach (var leg in legs)

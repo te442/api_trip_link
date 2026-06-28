@@ -45,15 +45,7 @@ import { AuthService } from '../../services/auth.service';
     </div>
   `,
   styles: [`
-    .container { padding: 20px; direction: rtl; }
-    .welcome { color: #555; margin-bottom: 12px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
-    th { background: #f4f4f4; }
-    .btn-primary { background: #1976d2; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; display: inline-block; }
-    .btn-sm { background: #1976d2; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; margin-left: 4px; }
-    .btn-danger-sm { background: #d32f2f; color: white; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; }
-    .loading { margin-top: 20px; color: #666; }
+    .btn-sm { margin-left: var(--tl-space-xs); }
   `]
 })
 export class MyTripsComponent implements OnInit {

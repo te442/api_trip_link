@@ -2,15 +2,27 @@ namespace API_trip_link.Models
 {
     internal class ArcCost
     {
-        public int      FromDestinationId  { get; set; }//נקודת התחלה
+        public int      FromDestinationId  { get; set; }
         public int      ToDestinationId    { get; set; }
-        public DateTime BestDepartureTime  { get; set; }//שעת יציה אופטמלית
-        public double   BusTransitHours    { get; set; }//זמן הנסיעה באוטובוס
-        public double   CarTransitHours    { get; set; }//זמן הנסיעה ברכב
-        public double   WalkingHours       { get; set; }//זמן ההליכה
-        public double   TransitEfficiency  { get; set; }//יעילות תחבורה
-        public bool     HasDirectBus       { get; set; }//קו ישיר
+        public DateTime BestDepartureTime  { get; set; }
+        public double   BusTransitHours    { get; set; }
+        public double   CarTransitHours    { get; set; }
+        public double   WalkingHours       { get; set; }
+        public double   TransitEfficiency  { get; set; }
+        public bool     HasDirectBus       { get; set; }
+        public List<TransitLegStep> TransitSteps { get; set; } = new();
         public double   TotalArcHours      => BusTransitHours + WalkingHours;
+    }
+
+    internal class TransitLegStep
+    {
+        public string   LineName      { get; set; } = "";
+        public string   VehicleType   { get; set; } = "";
+        public string   FromStation   { get; set; } = "";
+        public string   ToStation     { get; set; } = "";
+        public DateTime DepartureTime { get; set; }
+        public DateTime ArrivalTime   { get; set; }
+        public double   DurationHours { get; set; }
     }
 }
 

@@ -51,10 +51,13 @@ namespace API_trip_link.Services.Optimizer
         {
             return stepNumber switch
             {
-                0 => $"יעדים={ctx.Destinations.Count}, אזור={ctx.TripRegion}, חלון={ctx.Params?.MaxTimeFrame:F1}ש",
+                0 => ctx.ScheduleAdjustmentNote == null
+                    ? $"יעדים={ctx.Destinations.Count}, אזור={ctx.TripRegion}, חלון={ctx.Params?.MaxTimeFrame:F1}ש"
+                    : $"יעדים={ctx.Destinations.Count}, אזור={ctx.TripRegion}, חלון={ctx.Params?.MaxTimeFrame:F1}ש | {ctx.ScheduleAdjustmentNote}",
                 2 => ctx.ScoreTable == null
                     ? "ScoreTable=null"
-                    : $"מטריצה {ctx.ScoreTable.NodeCount}×{ctx.ScoreTable.NodeCount}×{ctx.ScoreTable.HourCount}, תקפים={ctx.ScoreTable.GetStats().ValidCells}",
+                    : $"מטריצה {ctx.ScoreTable.NodeCount}×{ctx.ScoreTable.NodeCount}×{ctx.ScoreTable.MinuteCount} דקות, " +
+                      $"מולאים={ctx.ScoreTable.EnumerateFilledCells().Count}, תקפים={ctx.ScoreTable.GetStats().ValidCells}",
                 4 => $"מסלול ראשוני: {ctx.InitialRoute.Destinations.Count} יעדים, ציון={ctx.InitialRoute.TotalScore:F2}",
                 5 => $"מסלול סופי: {ctx.BestRoute.Destinations.Count} יעדים, ציון={ctx.BestRoute.TotalScore:F2}, " +
                      $"SA איטרציות={ctx.SaResult.TotalIterations}, מקובלים={ctx.SaResult.AcceptedCount}",

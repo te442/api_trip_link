@@ -7,6 +7,9 @@ namespace API_trip_link.Models
         [JsonPropertyName("status")]
         public string Status { get; set; } = "";
 
+        [JsonPropertyName("error_message")]
+        public string? ErrorMessage { get; set; }
+
         [JsonPropertyName("routes")]
         public List<GoogleRoute> Routes { get; set; } = new();
     }

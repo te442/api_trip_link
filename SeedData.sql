@@ -109,6 +109,10 @@ INSERT INTO Destination (Des_id, Name_des, Rregion, level_id, Traveler_id, Time_
 (10, 'ירושלים - עיר עתיקה','מרכז',  1, 4, '04:00');
 SET IDENTITY_INSERT Destination OFF;
 
+UPDATE Destination SET opening_time = '08:00:00', closing_time = '16:00:00' WHERE Des_id IN (1, 4, 8, 10);
+UPDATE Destination SET opening_time = '06:00:00', closing_time = '19:00:00' WHERE Des_id IN (2, 3, 6, 7);
+UPDATE Destination SET opening_time = '09:00:00', closing_time = '18:00:00' WHERE Des_id IN (5, 9);
+
 -- ────────────────────────────────────────────────────────────
 -- 9. Categories_of_Destination
 -- ────────────────────────────────────────────────────────────

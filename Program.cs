@@ -1,7 +1,9 @@
 using System.Text;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using API_trip_link.Settings;
 using API_trip_link.Data;
 using API_trip_link.Data.Repositories;
 using API_trip_link.Middleware;
@@ -15,13 +17,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 ValidateHttpsConfiguration(builder.Configuration);
 
-// ─── Services ─────────────────────────────────────────────────────────────────
-
-// Database
+//התחברות ל SQL Server
 builder.Services.AddDbContext<TripContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Application Services
+//הזרקת תלויות לשירותים במערכת
 builder.Services.AddScoped<TripService>();
 builder.Services.AddScoped<DestinationService>();
 builder.Services.AddScoped<UserService>();
@@ -32,14 +32,17 @@ builder.Services.AddScoped<ILookupRepository, LookupRepository>();
 builder.Services.AddScoped<IOptimizerDataRepository, OptimizerDataRepository>();
 builder.Services.AddScoped<IOptimizerService, OptimizerServiceImpl>();
 
-// Transit API – Google Maps (falls back to Mock when no API key is set); outbound HTTPS only
+
 builder.Services.AddTransient<HttpsEnforcingHttpMessageHandler>();
 builder.Services.AddHttpClient<ITransitApiService, GoogleMapsTransitApiService>()
     .AddHttpMessageHandler<HttpsEnforcingHttpMessageHandler>();
+builder.Services.AddHttpClient<IPlacesAutocompleteService, GooglePlacesAutocompleteService>()
+    .AddHttpMessageHandler<HttpsEnforcingHttpMessageHandler>();
 
 builder.Services.AddSingleton<IOptimizationProgressStore, OptimizationProgressStore>();
+builder.Services.AddSingleton<IOptimizeResultCache, OptimizeResultCache>();
 
-// Optimizer Pipeline
+
 builder.Services.AddScoped<OptimizerPipeline>();
 builder.Services.AddScoped<IOptimizerStep, Step0_InputLoader>();
 builder.Services.AddScoped<IOptimizerStep, Step2_ScoreTableBuilder>();
@@ -47,7 +50,7 @@ builder.Services.AddScoped<IOptimizerStep, Step4_InitialRouteBuilder>();
 builder.Services.AddScoped<IOptimizerStep, Step5_SaOptimizer>();
 builder.Services.AddScoped<IOptimizerStep, Step6_TripItineraryBuilder>();
 
-// JWT Authentication
+//הגדרות אבטחה למשתמשים מורשים
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Jwt:Key is not configured");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -65,29 +68,30 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Controllers
+//הגדרות ה cors אילו אתרים יוכלו לגשת למערכת
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler =
             System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-// CORS – HTTPS origins only (from configuration)
+
 var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? Array.Empty<string>();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngular", policy =>
+    options.AddPolicy(Configuration.Api.CorsPolicyName, policy =>
     {
         policy.WithOrigins(corsOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
-
-var httpsPort = builder.Configuration.GetValue<int?>("Https:Port") ?? 7271;
+// הגדרת פרוטוקלי תקשורת
+var httpsPort = builder.Configuration.GetValue<int?>("Https:Port") ?? Configuration.Api.DefaultHttpsPort;
 builder.Services.AddHttpsRedirection(options =>
 {
     options.RedirectStatusCode = StatusCodes.Status308PermanentRedirect;
@@ -98,15 +102,15 @@ builder.Services.AddHsts(options =>
 {
     options.Preload           = true;
     options.IncludeSubDomains = true;
-    options.MaxAge            = TimeSpan.FromDays(365);
+    options.MaxAge            = TimeSpan.FromDays(Configuration.Api.HstsMaxAgeDays);
 });
 
-// Swagger / OpenAPI
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ─── App ──────────────────────────────────────────────────────────────────────
 
+//בניית האפליקציה
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -114,8 +118,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Trip Planner API v1");
-        c.RoutePrefix = string.Empty;
+        c.SwaggerEndpoint(Configuration.Api.SwaggerDocumentPath, Configuration.Api.SwaggerDocumentTitle);
+        c.RoutePrefix = Configuration.Api.SwaggerRoutePrefix;
     });
 }
 else
@@ -124,8 +128,9 @@ else
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseMiddleware<HttpsOnlyMiddleware>();
-app.UseCors("AllowAngular");
+app.UseCors(Configuration.Api.CorsPolicyName);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
@@ -137,7 +142,7 @@ static void ValidateHttpsConfiguration(IConfiguration configuration)
     var origins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
     foreach (var origin in origins)
     {
-        if (!origin.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        if (!origin.StartsWith(Configuration.Common.RequiredUrlScheme, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
                 $"CORS origin must use HTTPS: '{origin}'. Update Cors:AllowedOrigins in appsettings.");
@@ -146,7 +151,7 @@ static void ValidateHttpsConfiguration(IConfiguration configuration)
 
     var googleBaseUrl = configuration["GoogleMaps:BaseUrl"];
     if (!string.IsNullOrWhiteSpace(googleBaseUrl) &&
-        !googleBaseUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        !googleBaseUrl.StartsWith(Configuration.Common.RequiredUrlScheme, StringComparison.OrdinalIgnoreCase))
     {
         throw new InvalidOperationException(
             "GoogleMaps:BaseUrl must use HTTPS. Update appsettings.");

@@ -42,8 +42,7 @@ namespace API_trip_link.Services
 
             return trip == null ? null : MapToDto(trip);
         }
-
-        // ── GET trips by user ─────────────────────────────────────────────────
+        //פעולה לקבלת טיולים לפי משתמש
         public async Task<List<TripDto>> GetTripsByUserAsync(string userId)
         {
             return await _context.Trips
@@ -58,6 +57,9 @@ namespace API_trip_link.Services
        //פעולת יצירת טיול
         public async Task<TripDto> CreateTripAsync(CreateTripDto dto)
         {
+            if (string.IsNullOrWhiteSpace(dto.AddressStart))
+                throw new ArgumentException("כתובת התחלה חובה — יש לבחור כתובת מהרשימה");
+
             //יצירת אובייקט טיול
             var trip = new Trip
             {
@@ -86,8 +88,6 @@ namespace API_trip_link.Services
                     });
                 }
             }
-
-            // Add features
             //כנל לתכונות
             if (dto.FeatureIds != null)
             {

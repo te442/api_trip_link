@@ -1,3 +1,4 @@
+using API_trip_link.Settings;
 using API_trip_link.Data.Repositories;
 using API_trip_link.Models;
 using API_trip_link.Services.Optimizer;
@@ -7,10 +8,17 @@ namespace API_trip_link.Services.Optimizer.Steps
     internal class Step0_InputLoader : IOptimizerStep
     {
         private readonly IOptimizerDataRepository _data;
+        private readonly IConfiguration _config;
+        private readonly ILogger<Step0_InputLoader> _logger;
 
-        public Step0_InputLoader(IOptimizerDataRepository data)
+        public Step0_InputLoader(
+            IOptimizerDataRepository data,
+            IConfiguration config,
+            ILogger<Step0_InputLoader> logger)
         {
-            _data = data;
+            _data   = data;
+            _config = config;
+            _logger = logger;
         }
 
         public int StepNumber => 0;
@@ -46,14 +54,8 @@ namespace API_trip_link.Services.Optimizer.Steps
             //נותן רשימת יעדים מסוננים לפי אילוצים קשים
             var dbDestinations = await _data.GetDestinationsForOptimizationAsync(
                 region, levelId, tripCategoryIds, tripFeatureIds);
-
-            var mockStats = new Dictionary<int, (double avg, double std)>
-            {
-                { 1,  (350, 120) }, { 2,  (200,  40) }, { 3,  (150,  80) },
-                { 4,  (180,  50) }, { 5,  (300,  60) }, { 6,  (100,  30) },
-                { 7,  ( 80,  20) }, { 8,  (250,  70) }, { 9,  (400, 150) },
-                { 10, (500, 200) },
-            };
+            //-------------------------------להוריד/לשנות----------------
+            var mockStats = Configuration.Optimizer.MockVisitStatsByDestinationId;
             //הכנת אובייקט יעד כולל פרטים לאלגוריתם הראשי
             ctx.Destinations = dbDestinations.Select(d =>
             {
@@ -63,19 +65,17 @@ namespace API_trip_link.Services.Optimizer.Steps
 
                 double walkingHours = bestStation?.WalkingTime.HasValue == true
                     ? bestStation.WalkingTime!.Value.TotalHours
-                    : 0.0;
+                    : Configuration.Optimizer.DefaultWalkingTimeHours;
 
                 double visitHours = d.TimeDes.HasValue
                     ? d.TimeDes.Value.TotalHours
-                    : 1.5;
+                    : Configuration.Optimizer.DefaultVisitDurationHours;
 
-                double baseTransitHours = 1.0;
-
-                var (avg, std) = mockStats.TryGetValue(d.DesId, out var s) ? s : (100, 30);
+                var (avg, std) = mockStats.TryGetValue(d.DesId, out var s) ? s : (Configuration.Optimizer.DefaultVisitCountAvg, Configuration.Optimizer.DefaultVisitCountStd);
                 double dynReq  = WeightCalculator.ComputeDynamicRequirements(avg, std);
 
                 StationInfo? stationInfo = null;
-                double lat = 0, lon = 0;
+                double lat = Configuration.Common.MissingCoordinateValue, lon = Configuration.Common.MissingCoordinateValue;
 
                 if (d.Lat.HasValue && d.Lon.HasValue)
                 {
@@ -85,8 +85,8 @@ namespace API_trip_link.Services.Optimizer.Steps
                 else if (bestStation?.Station != null)
                 {
                     var st = bestStation.Station;
-                    lat = st.Lat.HasValue ? (double)st.Lat.Value : 0;
-                    lon = st.Lon.HasValue ? (double)st.Lon.Value : 0;
+                    lat = st.Lat.HasValue ? (double)st.Lat.Value : Configuration.Common.MissingCoordinateValue;
+                    lon = st.Lon.HasValue ? (double)st.Lon.Value : Configuration.Common.MissingCoordinateValue;
 
                     stationInfo = new StationInfo
                     {
@@ -105,15 +105,14 @@ namespace API_trip_link.Services.Optimizer.Steps
                     Name                = d.NameDes ?? "",
                     Latitude            = lat,
                     Longitude           = lon,
-                    OpeningTime         = TimeSpan.FromHours(8),
-                    ClosingTime         = TimeSpan.FromHours(20),
+                    OpeningTime         = d.OpeningTime,
+                    ClosingTime         = d.ClosingTime,
                     VisitDuration       = visitHours,
                     WalkingTimeHours    = walkingHours,
-                    TransitTimeHours    = baseTransitHours,
-                    CrowdFactor         = 0.3,
+                    CrowdFactor         = Configuration.Optimizer.DefaultCrowdFactor,
                     DynamicRequirements = dynReq,
-                    SoftConstraints     = 0.8,
-                    HardConstraints     = 1.0,
+                    SoftConstraints     = Configuration.Optimizer.DefaultSoftConstraints,
+                    HardConstraints     = Configuration.Optimizer.DefaultHardConstraints,
                     AvgVisitCount       = avg,
                     StdDevVisitCount    = std,
                     NearestStation      = stationInfo
@@ -132,22 +131,52 @@ namespace API_trip_link.Services.Optimizer.Steps
             }
 
             double maxTimeFrame = (request.TripEndTime - request.TripStartTime).TotalHours;
+            var (tripStart, tripEnd, scheduleNote) =
+                TripScheduleDateHelper.ClampForGoogleTransit(request.TripStartTime, request.TripEndTime);
+            ctx.ScheduleAdjustmentNote = scheduleNote;
+
+            maxTimeFrame = (tripEnd - tripStart).TotalHours;
+
+            double configuredMinTransitEfficiency = _config.GetValue(
+                "Optimizer:MinTransitEfficiency",
+                Configuration.Optimizer.DefaultMinTransitEfficiency);
+            double requestedMinTransitEfficiency = request.MinTransitEfficiency;
+            double minTransitEfficiency = Math.Clamp(
+                requestedMinTransitEfficiency >= Configuration.Optimizer.MinTransitEfficiencyFloor
+                    ? requestedMinTransitEfficiency
+                    : configuredMinTransitEfficiency,
+                Configuration.Optimizer.MinTransitEfficiencyFloor,
+                Configuration.Optimizer.MinTransitEfficiencyCeiling);
+            double minReturnHoursFallback = Math.Clamp(
+                _config.GetValue("Optimizer:MinReturnHoursFallback", Configuration.Optimizer.DefaultMinReturnHoursFallback),
+                Configuration.Optimizer.MinReturnHoursFallbackFloor,
+                Configuration.Optimizer.MinReturnHoursFallbackCeiling);
+
             //הכנת אובייקט פרמטרים  לאלגוריתם הראשי (זמני נסיעה/חזרה מה-UI בדקות → שעות)
             ctx.Params = new OptimizerParams
             {
-                TripStartTime        = request.TripStartTime,
-                TripEndTime          = request.TripEndTime,
-                MaxTravelTime        = request.MaxTravelTime / 60.0,
+                TripStartTime        = tripStart,
+                TripEndTime          = tripEnd,
+                MaxTravelTime        = request.MaxTravelTime / Configuration.Common.MinutesPerHour,
                 MaxTimeFrame         = maxTimeFrame,
-                ReturnTravelTime     = request.ReturnTravelTime / 60.0,
-                MinTransitEfficiency = request.MinTransitEfficiency,
+                ReturnTravelTime     = request.ReturnTravelTime / Configuration.Common.MinutesPerHour,
+                MinReturnHoursFallback = minReturnHoursFallback,
+                MinTransitEfficiency = minTransitEfficiency,
                 MaxNumDes            = maxNumDes,
                 AddressStart         = trip.AddressStart ?? ""
             };
 
             AgentDebugLog.Write("Step0_InputLoader.cs:136", "Input loaded for score table",
-                new { ctx.Destinations.Count, maxTimeFrame, request.TripId, MinTransitEfficiency = request.MinTransitEfficiency },
+                new { ctx.Destinations.Count, maxTimeFrame, request.TripId, MinTransitEfficiency = minTransitEfficiency },
                 "H4");
+
+            var destNames = string.Join(", ", ctx.Destinations.Select(d => d.Name));
+            OptimizerLog.Info(_logger, ctx,
+                "נטענו {Count} יעדים: [{Names}] | אזור={Region} | חלון={Start:HH:mm}-{End:HH:mm} | יעילות מינ={MinEff} | התחלה={Address}",
+                ctx.Destinations.Count, destNames, ctx.TripRegion,
+                tripStart, tripEnd, minTransitEfficiency, trip.AddressStart ?? Configuration.Optimizer.EmptyAddressPlaceholder);
+            if (scheduleNote != null)
+                OptimizerLog.Info(_logger, ctx, "התאמת תאריך: {Note}", scheduleNote);
         }
     }
 }

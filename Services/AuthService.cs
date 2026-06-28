@@ -53,7 +53,7 @@ namespace API_trip_link.Services
             //בדיקת אימות משתמש לפי המייל
             var email = dto.Email.Trim().ToLowerInvariant();
             var user  = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-            //בדיקת קיום משתמש וסיסמא נכונה
+            //בדיקת האם משתמש קיים וסיסמא נכונה
 
             if (user == null || string.IsNullOrEmpty(user.PasswordHash))
                 throw new UnauthorizedAccessException("אימייל או סיסמה שגויים");
@@ -66,6 +66,7 @@ namespace API_trip_link.Services
  
         private AuthResponseDto BuildAuthResponse(User user)
         {
+            //החזרת תגובה לשרת עם מבנה המשתמש
             return new AuthResponseDto
             {
                 Token    = GenerateJwt(user),
@@ -74,7 +75,7 @@ namespace API_trip_link.Services
                 Email    = user.Email ?? ""
             };
         }
-
+        //פונקציה יוצרת טוקן יחודי למשתמש לצורך אימותו במהלך השימוש באתר לאחר שהתחבר למערכת;
         private string GenerateJwt(User user)
         {
             var key     = _config["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is not configured");

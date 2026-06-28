@@ -2,6 +2,7 @@ using System.Text.Json;
 
 namespace API_trip_link.Services.Optimizer
 {
+    //דיבוג
     internal static class AgentDebugLog
     {
         private const string LogPath = @"c:\Users\User\Desktop\פרויקט טיול\API_trip_link\debug-459778.log";

@@ -1,3 +1,4 @@
+using API_trip_link.Settings;
 using API_trip_link.Models;
 using API_trip_link.Services.Transit;
 
@@ -19,10 +20,6 @@ namespace API_trip_link.Services.Optimizer
         public ArcCost Compute(OptimizerDestination? fromDest, OptimizerDestination toDest, DateTime nominalDeparture)
             => ComputeAsync(fromDest, toDest, nominalDeparture).GetAwaiter().GetResult();
 
-        /// <summary>
-        /// Single Google Maps lookup per table cell (nominal departure hour).
-        /// Fine-grained departure search belongs in ScoreTable build, not per-cell multiplication.
-        /// </summary>
         public async Task<ArcCost> ComputeAsync(
             OptimizerDestination? fromDest,
             OptimizerDestination toDest,
@@ -37,27 +34,36 @@ namespace API_trip_link.Services.Optimizer
             var result = await _transitApi.GetTransitTimeAsync(
                 from,
                 to,
-                baseTransitHours: toDest.TransitTimeHours > 0 ? toDest.TransitTimeHours : 1.0,
                 walkingHours: toDest.WalkingTimeHours,
                 departureTime: nominalDeparture);
-
+                //חישוב יעילות תחבורה
             double efficiency = (result.BusTransitHours > 0 && result.CarTransitHours > 0)
-                ? Math.Max(0.0, Math.Min(1.0, result.CarTransitHours / result.BusTransitHours))
-                : 0.5;
+                ? Math.Max(Configuration.Common.ScoreMin, Math.Min(Configuration.Common.ScoreMax, result.CarTransitHours / result.BusTransitHours))
+                : 0;
 
             return new ArcCost
             {
-                FromDestinationId = fromDest?.DestinationId ?? -1,
+                FromDestinationId = fromDest?.DestinationId ?? Configuration.Common.OriginDestinationId,
                 ToDestinationId   = toDest.DestinationId,
                 BestDepartureTime = nominalDeparture,
                 BusTransitHours   = result.BusTransitHours,
                 CarTransitHours   = result.CarTransitHours,
                 WalkingHours      = result.WalkingHours,
                 TransitEfficiency = efficiency,
-                HasDirectBus      = result.HasDirectBus
+                HasDirectBus      = result.HasDirectBus,
+                TransitSteps      = result.TransitSteps.Select(s => new TransitLegStep
+                {
+                    LineName      = s.LineName,
+                    VehicleType   = s.VehicleType,
+                    FromStation   = s.FromStation,
+                    ToStation     = s.ToStation,
+                    DepartureTime = s.DepartureTime,
+                    ArrivalTime   = s.ArrivalTime,
+                    DurationHours = s.DurationHours
+                }).ToList()
             };
         }
-
+        //פונקציה המחזירהאת עלות הקשת אם היא קיימת במיקום הנוכחי ואם לא היא מחשבת קשת 
         public ArcCost LookupOrCompute(
             ScoreTable? scoreTable,
             OptimizerDestination? fromDest,
@@ -72,22 +78,23 @@ namespace API_trip_link.Services.Optimizer
                 : scoreTable.DestIdToIndex(fromDest.DestinationId);
 
             int toIndex   = scoreTable.DestIdToIndex(toDest.DestinationId);
-            int hourIndex = scoreTable.TimeToHourIndex(departureTime);
+            int minuteIndex = scoreTable.TimeToMinuteIndex(departureTime);
 
-            if (fromIndex < 0 || toIndex < 1)
+            if (fromIndex < 0 || toIndex < Configuration.Common.MinDestinationNodeIndex)
                 return Compute(fromDest, toDest, departureTime);
 
-            var cell = scoreTable.Get(fromIndex, toIndex, hourIndex);
-            return cell.IsValid ? cell.ArcCost : Compute(fromDest, toDest, departureTime);
+            var cell = scoreTable.FindNearestValidCell(fromIndex, toIndex, minuteIndex);
+            return cell?.IsValid == true ? cell.ArcCost : Compute(fromDest, toDest, departureTime);
         }
-
+        //פונקציה שמה את המיקום
         private TransitLocation BuildLocation(OptimizerDestination? dest, bool isOrigin)
         {
+            //אם זה יעד המקןר
             if (isOrigin)
             {
                 return new TransitLocation
                 {
-                    DestinationId = -1,
+                    DestinationId = Configuration.Common.OriginDestinationId,
                     Address       = _tripParams.AddressStart,
                     Latitude      = _tripParams.StartLatitude,
                     Longitude     = _tripParams.StartLongitude

@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API_trip_link.Data.Repositories
 {
+    //מחלקה המנהלת את האילוצים
+    //מממשת את ממשק המנהל את האילוצים
     public class LookupRepository : ILookupRepository
     {
         private readonly TripContext _context;
@@ -11,7 +13,7 @@ namespace API_trip_link.Data.Repositories
         {
             _context = context;
         }
-
+        //מחזירה רשימה של אובייקטים מסוג CategoryDto
         public async Task<List<CategoryDto>> GetCategoriesAsync()
         {
             return await _context.Categories
@@ -22,6 +24,7 @@ namespace API_trip_link.Data.Repositories
                 })
                 .ToListAsync();
         }
+        //מחזירה רשימה של אובייקטים מסוג DifficultyLevelDto
 
         public async Task<List<DifficultyLevelDto>> GetLevelsAsync()
         {
@@ -33,7 +36,7 @@ namespace API_trip_link.Data.Repositories
                 })
                 .ToListAsync();
         }
-
+        //מחזירה רשימה של אובייקטים מסוג TravelerTypeDto
         public async Task<List<TravelerTypeDto>> GetTravelerTypesAsync()
         {
             return await _context.TypeTravelers
@@ -44,7 +47,7 @@ namespace API_trip_link.Data.Repositories
                 })
                 .ToListAsync();
         }
-
+        //מחזירה רשימה של אובייקטים מסוג FeatureTypeDto
         public async Task<List<FeatureTypeDto>> GetFeaturesAsync()
         {
             return await _context.FeatureTypes
@@ -55,7 +58,7 @@ namespace API_trip_link.Data.Repositories
                 })
                 .ToListAsync();
         }
-
+        //מחזירה רשימה של איזורים
         public async Task<List<string>> GetRegionsAsync()
         {
             return await _context.Destinations

@@ -1,16 +1,17 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
-import { Subscription, interval, switchMap, takeWhile } from 'rxjs';
+import { Subscription, interval, switchMap, takeWhile, catchError, of } from 'rxjs';
 
 import { TripService } from '../../services/trip.service';
 
 import { TripStateService } from '../../services/trip-state.service';
 
-import { OptimizationStepTrace, OptimizeRequest, ScoreTableCellTrace, Trip } from '../../models/models';
+import { OptimizationStepTrace, OptimizationProgress, OptimizeRequest, ScoreTableCellTrace, Trip } from '../../models/models';
+import { ScoreTableGridComponent } from '../score-table-grid/score-table-grid.component';
 
 
 
@@ -20,13 +21,13 @@ import { OptimizationStepTrace, OptimizeRequest, ScoreTableCellTrace, Trip } fro
 
   standalone: true,
 
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ScoreTableGridComponent],
 
   template: `
 
     <div class="container">
 
-      <h2>חישוב מסלול אופטימלי</h2>
+      <h2>תוצאת המערכת</h2>
 
 
 
@@ -84,79 +85,34 @@ import { OptimizationStepTrace, OptimizeRequest, ScoreTableCellTrace, Trip } fro
 
       </div>
 
-      <div *ngIf="scoreTableCellsTotal > 0" class="cells-card">
-        <h3>בניית טבלה תלת-ממדית — תא {{ scoreTableCellsBuilt }} / {{ scoreTableCellsTotal }}</h3>
-        <div class="cells-log" #cellsLog>
-          <div *ngFor="let cell of scoreTableCells"
-               class="cell-row"
-               [class.invalid]="!cell.isValid">
-            <span class="coords">[{{ cell.i }},{{ cell.j }},{{ cell.h }}]</span>
-            <span class="route">{{ cell.fromLabel }} → {{ cell.toLabel }}</span>
-            <span class="time">{{ cell.departureTime }}</span>
-            <span class="score" [class.bad]="!cell.isValid">ציון {{ cell.transitionScore }}</span>
-            <span class="meta">אוטובוס {{ cell.busTransitHours }}ש | הליכה {{ cell.walkingHours }}ש</span>
-          </div>
-        </div>
-      </div>
+      <app-score-table-grid
+        *ngIf="showScoreTable"
+        [cells]="scoreTableCells"
+        [httpCompleted]="scoreTableCellsBuilt"
+        [httpEstimated]="scoreTableCellsTotal || scoreTableCellsBuilt"
+        [waiting]="scoreTableStepActive && scoreTableCells.length === 0"
+        title="בניית טבלת ציונים תלת-ממדית">
+      </app-score-table-grid>
 
       <div *ngIf="error" class="error">{{ error }}</div>
 
-      <a routerLink="/plan" class="btn-secondary">חזור לתכנון</a>
+      <div class="btn-row">
+        <a routerLink="/plan" class="btn-secondary">חזור לתכנון</a>
+      </div>
 
     </div>
 
   `,
 
   styles: [`
-
-    .container { padding: 24px; direction: rtl; max-width: 960px; margin: 0 auto; }
-
-    .summary-card { background: #f0f7ff; padding: 16px; border-radius: 8px; margin-bottom: 20px; }
-
-    .pipeline-card { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin: 20px 0; }
-
-    .pipeline-list { list-style: none; padding: 0; margin: 0; }
-
-    .pipeline-list li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #eee; }
-
-    .pipeline-list li:last-child { border-bottom: none; }
-
-    .pipeline-list li.running { background: #e3f2fd; border-radius: 6px; padding: 10px 8px; }
-
-    .pipeline-list li.done .icon { color: #2e7d32; }
-
-    .pipeline-list li.failed { background: #ffebee; border-radius: 6px; }
-
-    .icon { font-size: 1.2rem; width: 28px; text-align: center; }
-
-    .step-body { flex: 1; }
-
-    .status { color: #666; font-size: 0.85rem; margin-right: 8px; }
-
-    .detail { margin: 4px 0 0; color: #444; font-size: 0.9rem; }
-
-    .duration { margin: 2px 0 0; color: #888; font-size: 0.8rem; }
-    .cells-card { background: #fffde7; border: 1px solid #fff176; border-radius: 8px; padding: 16px; margin: 20px 0; }
-    .cells-card h3 { margin: 0 0 12px; color: #f57f17; font-size: 1rem; }
-    .cells-log { max-height: 320px; overflow-y: auto; font-family: Consolas, monospace; font-size: 0.8rem; background: #fff; border: 1px solid #eee; border-radius: 6px; padding: 8px; }
-    .cell-row { display: grid; grid-template-columns: 72px 1fr 48px 72px 1fr; gap: 8px; padding: 4px 0; border-bottom: 1px solid #f5f5f5; }
-    .cell-row.invalid { color: #c62828; background: #fff5f5; }
-    .cell-row .coords { color: #666; }
-    .cell-row .score.bad { color: #c62828; }
-    .cell-row .meta { color: #888; font-size: 0.75rem; }
-    .btn-primary { background: #1976d2; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; margin-left: 12px; }
-
-    .btn-primary:disabled { background: #90caf9; }
-
-    .btn-secondary { color: #1976d2; text-decoration: none; }
-
-    .error { margin-top: 16px; color: #d32f2f; background: #ffebee; padding: 12px; border-radius: 6px; }
-
+    .btn-primary { margin-bottom: var(--tl-space-md); }
   `]
 
 })
 
 export class OptimizeScreenComponent implements OnInit, OnDestroy {
+
+  private readonly cellByKey = new Map<string, ScoreTableCellTrace>();
 
   tripId = 0;
 
@@ -174,7 +130,7 @@ export class OptimizeScreenComponent implements OnInit, OnDestroy {
 
     returnTravelTime: 60,
 
-    minTransitEfficiency: 0.5
+    minTransitEfficiency: 0.1
 
   };
 
@@ -186,8 +142,15 @@ export class OptimizeScreenComponent implements OnInit, OnDestroy {
   scoreTableCells: ScoreTableCellTrace[] = [];
   scoreTableCellsBuilt = 0;
   scoreTableCellsTotal = 0;
-  @ViewChild('cellsLog') cellsLog?: ElementRef<HTMLDivElement>;
   private pollSub?: Subscription;
+
+  get scoreTableStepActive(): boolean {
+    return this.pipelineSteps.some(s => s.stepNumber === 2 && s.status === 'Running');
+  }
+
+  get showScoreTable(): boolean {
+    return this.scoreTableStepActive || this.scoreTableCells.length > 0 || this.loading;
+  }
 
 
 
@@ -223,10 +186,6 @@ export class OptimizeScreenComponent implements OnInit, OnDestroy {
 
     this.request.returnTravelTime    = Number(qp.get('returnTravelTime') || 60);
 
-    this.request.minTransitEfficiency = Number(qp.get('minTransitEfficiency') || 0.5);
-
-
-
     this.tripService.getById(this.tripId).subscribe({
 
       next: t => this.trip = t,
@@ -248,12 +207,14 @@ export class OptimizeScreenComponent implements OnInit, OnDestroy {
 
 
   optimize(): void {
+    if (this.loading) return;
 
     this.loading = true;
-
     this.error = '';
+    this.tripState.clear(this.tripId);
 
     this.pipelineSteps = [];
+    this.cellByKey.clear();
     this.scoreTableCells = [];
     this.scoreTableCellsBuilt = 0;
     this.scoreTableCellsTotal = 0;
@@ -271,59 +232,66 @@ export class OptimizeScreenComponent implements OnInit, OnDestroy {
 
 
     this.tripService.optimize(apiRequest).subscribe({
-
-      next: result => {
-
-        if (result.scoreTableCellTrace?.length) {
-          this.scoreTableCells = result.scoreTableCellTrace;
-          this.scoreTableCellsTotal = result.scoreTableCellTrace.length;
-        }
-
-        if (result.pipelineTrace?.length) {
-
-          this.pipelineSteps = result.pipelineTrace;
-
-        }
-
-        this.appendClientStep(9, 'SAVE_ROUTE', 'שמירת מסלול בבסיס הנתונים', 'Running');
-
-
-
-        const destIds = result.optimalRoute?.map(d => d.desId) ?? [];
-
-        this.tripService.saveRoute(this.tripId, destIds).subscribe({
-
-          next: () => this.finishOptimize(result),
-
-          error: () => this.finishOptimize(result)
-
-        });
-
-      },
-
+      next: result => this.handleOptimizeResult(result),
       error: err => {
-
         this.loading = false;
-
         this.pollSub?.unsubscribe();
-
-        this.error = err.error?.error || err.error?.title || 'שגיאה בחישוב המסלול';
-
+        this.error = err.error?.error || err.error?.title || 'שגיאה בהפעלת חישוב המסלול';
       }
-
     });
-
   }
 
+  private handleOptimizeResult(result: import('../../models/models').OptimizeResult): void {
+    const legs = result.legs ?? [];
+    const route = result.optimalRoute ?? [];
 
+    if (result.scoreTableCellTrace?.length) {
+      this.setScoreTableCells(result.scoreTableCellTrace);
+    }
+
+    if (result.pipelineTrace?.length) {
+      this.pipelineSteps = result.pipelineTrace;
+    }
+
+    if (!route.length || !legs.length) {
+      this.loading = false;
+      this.pollSub?.unsubscribe();
+      const validCells = result.scoreTableStats?.validCells ?? 0;
+      const failedStep = result.pipelineTrace?.find(s => s.status === 'Failed');
+      if (failedStep?.detail) {
+        this.error = failedStep.detail;
+      } else if (validCells === 0) {
+        this.error = 'לא נמצאו תאים תקפים בטבלת הציונים. נסי להוריד את סף יעילות התחבורה או להרחיב את חלון הזמן.';
+      } else {
+        this.error = 'לא נמצא מסלול תקף מתוך היעדים שנבחרו. נסי להוריד את סף יעילות התחבורה או להאריך את שעות הטיול.';
+      }
+      return;
+    }
+
+    this.appendClientStep(9, 'SAVE_ROUTE', 'שמירת מסלול בבסיס הנתונים', 'Running');
+
+    const destIds = route.map(d => d.desId);
+    this.tripService.saveRoute(this.tripId, destIds).subscribe({
+      next: () => this.finishOptimize(result),
+      error: () => this.finishOptimize(result)
+    });
+  }
 
   private startProgressPolling(traceId: string): void {
 
     this.pollSub?.unsubscribe();
 
-    this.pollSub = interval(400).pipe(
+    this.pollSub = interval(800).pipe(
 
-      switchMap(() => this.tripService.getOptimizeProgress(traceId)),
+      switchMap(() => this.tripService.getOptimizeProgress(traceId).pipe(
+        catchError(() => of<OptimizationProgress>({
+          traceId,
+          isComplete: false,
+          hasError: false,
+          steps: [],
+          scoreTableCells: []
+        }))
+      )),
 
       takeWhile(p => !p.isComplete, true)
 
@@ -342,19 +310,27 @@ export class OptimizeScreenComponent implements OnInit, OnDestroy {
           this.scoreTableCellsBuilt = progress.scoreTableCellsBuilt;
         }
         if (progress.scoreTableCells?.length) {
-          this.scoreTableCells = progress.scoreTableCells;
-          setTimeout(() => this.scrollCellsToBottom(), 0);
+          this.mergeScoreTableCells(progress.scoreTableCells);
         }
 
         if (progress.hasError && progress.errorMessage) {
-
+          this.loading = false;
+          this.pollSub?.unsubscribe();
           this.error = progress.errorMessage;
+          return;
+        }
 
+        if (progress.isComplete && !progress.hasError) {
+          const ran = progress.steps?.some(s => s.status === 'Completed' || s.status === 'Running');
+          if (!ran) {
+            return;
+          }
+          this.pollSub?.unsubscribe();
         }
 
       },
 
-      error: () => {}
+      error: () => { /* polling continues via catchError above */ }
 
     });
 
@@ -362,12 +338,21 @@ export class OptimizeScreenComponent implements OnInit, OnDestroy {
 
 
 
-  private scrollCellsToBottom(): void {
-    const el = this.cellsLog?.nativeElement;
-    if (el) el.scrollTop = el.scrollHeight;
+  private mergeScoreTableCells(incoming: ScoreTableCellTrace[]): void {
+    for (const cell of incoming) {
+      this.cellByKey.set(`${cell.i}-${cell.j}-${cell.h}`, cell);
+    }
+    this.scoreTableCells = Array.from(this.cellByKey.values()).sort(
+      (a, b) => a.i - b.i || a.j - b.j || a.h - b.h
+    );
+    this.scoreTableCellsBuilt = this.scoreTableCells.length;
   }
 
-
+  private setScoreTableCells(cells: ScoreTableCellTrace[]): void {
+    this.cellByKey.clear();
+    this.mergeScoreTableCells(cells);
+    this.scoreTableCellsTotal = cells.length;
+  }
 
   private finishOptimize(result: import('../../models/models').OptimizeResult): void {
 
@@ -469,7 +454,7 @@ export class OptimizeScreenComponent implements OnInit, OnDestroy {
 
   private buildApiRequest(): OptimizeRequest {
 
-    const date = (this.trip?.tripDate || new Date().toISOString()).split('T')[0];
+    const date = this.resolveTripDate(this.trip?.tripDate);
 
     return {
 
@@ -481,9 +466,9 @@ export class OptimizeScreenComponent implements OnInit, OnDestroy {
 
       maxTravelTime: this.request.maxTravelTime,
 
-      returnTravelTime: this.request.returnTravelTime / 60,
+      returnTravelTime: this.request.returnTravelTime,
 
-      minTransitEfficiency: this.request.minTransitEfficiency
+      minTransitEfficiency: this.request.minTransitEfficiency ?? 0.1
 
     };
 
@@ -497,6 +482,29 @@ export class OptimizeScreenComponent implements OnInit, OnDestroy {
 
     return `${date}T${normalized}`;
 
+  }
+
+  private resolveTripDate(raw?: string): string {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const min = new Date(today);
+    min.setDate(min.getDate() + 1);
+
+    const max = new Date(today);
+    max.setDate(max.getDate() + 14);
+
+    let parsed = raw ? new Date(raw) : new Date(min);
+    parsed.setHours(0, 0, 0, 0);
+
+    if (isNaN(parsed.getTime()) || parsed < min) {
+      parsed = min;
+    } else if (parsed > max) {
+      parsed = new Date(today);
+      parsed.setDate(parsed.getDate() + 7);
+    }
+
+    return parsed.toISOString().split('T')[0];
   }
 
 }

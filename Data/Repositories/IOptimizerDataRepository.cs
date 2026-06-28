@@ -2,7 +2,7 @@ using API_trip_link.Models;
 
 namespace API_trip_link.Data.Repositories
 {
-    public interface IOptimizerDataRepository
+    public interface IOptimizerDataRepository//ממשק המנהל את הנתונים לאופטמזציה
     {
         Task<Trip?> GetTripForOptimizationAsync(int tripId);
         Task<List<Destination>> GetDestinationsForOptimizationAsync(

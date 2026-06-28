@@ -8,7 +8,11 @@ export interface Destination {
   levelType?: string;
   travelerId?: number;
   travelerType?: string;
-  timeDes?: number;
+  timeDes?: number | string;
+  openingTime?: string;
+  closingTime?: string;
+  imageUrl?: string;
+  categories?: string[];
 }
 
 export interface Trip {
@@ -85,7 +89,7 @@ export interface OptimizeRequest {
   tripEndTime: string;
   maxTravelTime: number;
   returnTravelTime: number;
-  minTransitEfficiency: number;
+  minTransitEfficiency?: number;
   traceId?: string;
 }
 
@@ -108,26 +112,33 @@ export interface OptimizationProgress {
   steps: OptimizationStepTrace[];
   scoreTableCellsBuilt?: number;
   scoreTableCellsTotal?: number;
+  scoreTableHttpRequestsCompleted?: number;
+  scoreTableHttpRequestsEstimated?: number;
   scoreTableCells?: ScoreTableCellTrace[];
 }
 
 export interface ScoreTableCellTrace {
+  seq?: number;
   i: number;
   j: number;
   h: number;
   fromLabel: string;
   toLabel: string;
   departureTime: string;
+  apiKind?: string;
+  fromCache?: boolean;
   isValid: boolean;
   transitionScore: number;
   busTransitHours: number;
   walkingHours: number;
   transitEfficiency: number;
+  hasDirectBus?: boolean;
 }
 
 export interface BusLine {
   busNumber: string;
   direction: string;
+  vehicleType?: string;
   fromStation: string;
   toStation: string;
   departureTime: string;
@@ -168,6 +179,7 @@ export interface MapPoint {
 
 export interface ScoreTableStats {
   nodeCount: number;
+  minuteCount?: number;
   hourCount: number;
   totalCells: number;
   validCells: number;
@@ -187,6 +199,7 @@ export interface OptimizeResult {
   optimalRoute: Destination[];
   narrative?: string;
   legs?: TripLeg[];
+  returnLeg?: TripLeg;
   mapPoints?: MapPoint[];
   scoreTableStats?: ScoreTableStats;
   pipelineTrace?: OptimizationStepTrace[];
@@ -204,6 +217,7 @@ export interface TripItinerary {
   transitEfficiency: number;
   narrative?: string;
   legs: TripLeg[];
+  returnLeg?: TripLeg;
   mapPoints: MapPoint[];
 }
 

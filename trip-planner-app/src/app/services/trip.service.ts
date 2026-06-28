@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Trip, CreateTrip, OptimizeRequest, OptimizeResult, TripItinerary, OptimizationProgress } from '../models/models';
+import { normalizeOptimizationProgress, normalizeOptimizeResult } from './api-normalize';
 
 @Injectable({ providedIn: 'root' })
 export class TripService {
@@ -31,11 +32,15 @@ export class TripService {
   }
 
   optimize(request: OptimizeRequest): Observable<OptimizeResult> {
-    return this.http.post<OptimizeResult>(`${this.url}/optimize`, request);
+    return this.http.post<Record<string, unknown>>(`${this.url}/optimize`, request).pipe(
+      map(raw => normalizeOptimizeResult(raw))
+    );
   }
 
   getOptimizeProgress(traceId: string): Observable<OptimizationProgress> {
-    return this.http.get<OptimizationProgress>(`${this.url}/optimize/progress/${traceId}`);
+    return this.http.get<Record<string, unknown>>(`${this.url}/optimize/progress/${traceId}`).pipe(
+      map(raw => normalizeOptimizationProgress(raw))
+    );
   }
 
   saveRoute(tripId: number, destinationIds: number[]): Observable<any> {

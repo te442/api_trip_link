@@ -15,7 +15,6 @@ namespace API_trip_link.Models
         public double   SoftConstraints     { get; set; }
         public double   HardConstraints     { get; set; }
         public double   OptimalityScore     { get; set; }
-        public double   TransitTimeHours    { get; set; }
         public double   AvgVisitCount       { get; set; }
         public double   StdDevVisitCount    { get; set; }
         public StationInfo? NearestStation  { get; set; }

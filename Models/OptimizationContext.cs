@@ -1,4 +1,5 @@
 using API_trip_link.Services.Optimizer;
+using API_trip_link.Services.Optimizer.Instrumentation;
 
 namespace API_trip_link.Models
 {
@@ -14,8 +15,10 @@ namespace API_trip_link.Models
         public TripPlan TripPlan { get; set; } = new();
         public string TripRegion { get; set; } = "";
         public string TripName { get; set; } = "";
+        public string? ScheduleAdjustmentNote { get; set; }
         public string TraceId { get; set; } = "";
         public List<OptimizationStepTraceDto> StepTrace { get; set; } = new();
         public List<ScoreTableCellTraceDto> ScoreTableCellTrace { get; set; } = new();
+        public ScoreTableUsageInstrumentation? Instrumentation { get; set; }
     }
 }

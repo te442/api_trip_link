@@ -30,18 +30,7 @@ import { AuthService } from '../../services/auth.service';
       </div>
     </div>
   `,
-  styles: [`
-    .auth-page { min-height: 100vh; display: flex; justify-content: center; align-items: center; background: #f0f4f8; direction: rtl; }
-    .auth-card { background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-    h2 { margin: 0 0 24px; color: #1976d2; }
-    .form-group { margin-bottom: 16px; display: flex; flex-direction: column; }
-    label { font-weight: 600; margin-bottom: 6px; }
-    input { padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
-    .btn-primary { width: 100%; background: #1976d2; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
-    .btn-primary:disabled { background: #90caf9; }
-    .link-row { text-align: center; margin-top: 16px; }
-    .error { margin-top: 12px; color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 6px; }
-  `]
+  styles: []
 })
 export class LoginComponent {
   email    = '';

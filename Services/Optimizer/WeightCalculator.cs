@@ -1,14 +1,15 @@
+using API_trip_link.Settings;
 using API_trip_link.Models;
 
 namespace API_trip_link.Services.Optimizer
 {
     internal static class WeightCalculator
     {
-        public static double ComputeDynamicRequirements(double avg, double stdDev)
+        public static double ComputeDynamicRequirements(double avg, double stdDev)//לשנול שלא להפעיל מהמוק ולשלוח נתוני דמה
         {
-            if (avg <= 0) return 0.5;
+            if (avg <= 0) return Configuration.Optimizer.DefaultDynamicRequirementsWhenNoData;
             double cv = stdDev / avg;
-            return Math.Max(0.0, Math.Min(1.0, cv));
+            return Math.Max(Configuration.Common.ScoreMin, Math.Min(Configuration.Common.ScoreMax, cv));
         }
         //פונקציה מחשבת את הציון האופטימלי של היעד
         //מקבלת את היעד, את הפרמטרים של הטיול, את הזמן של היציאה מהמקור, את הזמן של הנסיעה הישרה ואת הזמן של הנסיעה ברכב
@@ -21,37 +22,55 @@ namespace API_trip_link.Services.Optimizer
             double indirectTravelTime,
             bool routeMatchesTraveler,
             bool hasDeadEnd)
+            => EvaluateDestinationOptimality(
+                dest, tripParams, arrivalTime,
+                directTravelTime, indirectTravelTime,
+                routeMatchesTraveler, hasDeadEnd).Score;
+
+        /// <summary>מחזיר ציון וסיבת פסילה (אם יש).</summary>
+        public static (double Score, string? RejectionReason) EvaluateDestinationOptimality(
+            OptimizerDestination dest,
+            OptimizerParams tripParams,
+            DateTime arrivalTime,
+            double directTravelTime,
+            double indirectTravelTime,
+            bool routeMatchesTraveler,
+            bool hasDeadEnd)
         {
-            // פסילה על אילוץ קשה
-            if (dest.HardConstraints < 1.0) return -1.0;
+            if (dest.HardConstraints < Configuration.Optimizer.HardConstraintThreshold)
+                return (Configuration.Optimizer.InvalidOptimalityScore, "אילוץ קשה: HardConstraints < 1");
 
-            //חישוב יעילות תחבורה 
             double transitEfficiency = CalculateTransitEfficiency(directTravelTime, indirectTravelTime);
-            if (directTravelTime <= 0 || transitEfficiency < tripParams.MinTransitEfficiency)
-                return -1.0;
 
-            // בדיקת חלון זמן: הגעה לפני סגירה + חזרה לפני סוף הטיול
-            if (!CheckTimeWindow(tripParams, arrivalTime, directTravelTime, dest)) 
-                return -1.0;
+            if (directTravelTime <= 0)
+                return (Configuration.Optimizer.InvalidOptimalityScore, $"זמן נסיעה לא תקין: directTravelTime={directTravelTime:F2}ש");
 
-            //חישוב ציון אופטמלי 
-            double crowdScore   = 1.0 - dest.CrowdFactor;
-            double dynamicScore = 1.0 - dest.DynamicRequirements;
+            if (transitEfficiency < tripParams.MinTransitEfficiency)
+                return (Configuration.Optimizer.InvalidOptimalityScore,
+                    $"יעילות תחבורה נמוכה: {transitEfficiency:F2} < סף {tripParams.MinTransitEfficiency:F2} " +
+                    $"(אוטובוס+הליכה={directTravelTime:F2}ש, רכב={indirectTravelTime:F2}ש)");
+
+            var timeReason = ExplainTimeWindowRejection(tripParams, arrivalTime, directTravelTime, dest);
+            if (timeReason != null)
+                return (Configuration.Optimizer.InvalidOptimalityScore, timeReason);
+
+            double crowdScore   = Configuration.Optimizer.HardConstraintThreshold - dest.CrowdFactor;
+            double dynamicScore = Configuration.Optimizer.HardConstraintThreshold - dest.DynamicRequirements;
             double softScore    = dest.SoftConstraints;
 
-            double transitBonus = routeMatchesTraveler && !hasDeadEnd ? 0.1
-                                : routeMatchesTraveler ? 0.05 : 0.0;
+            double transitBonus = routeMatchesTraveler && !hasDeadEnd ? Configuration.Optimizer.TransitBonusDirectRoute
+                                : routeMatchesTraveler ? Configuration.Optimizer.TransitBonusPartialMatch : Configuration.Optimizer.TransitBonusNone;
             double transitScore = Normalize(transitEfficiency + transitBonus);
-            //חישוב לפי אחוזים
-            double rawScore = softScore    * 0.30
-                            + crowdScore   * 0.10
-                            + dynamicScore * 0.10
-                            + transitScore * 0.50;
 
-            return Normalize(rawScore);
+            double rawScore = softScore    * Configuration.Optimizer.WeightSoftConstraints
+                            + crowdScore   * Configuration.Optimizer.WeightCrowd
+                            + dynamicScore * Configuration.Optimizer.WeightDynamic
+                            + transitScore * Configuration.Optimizer.WeightTransit;
+
+            return (Normalize(rawScore), null);
         }
 
-        public static bool CheckTimeWindow(
+        public static string? ExplainTimeWindowRejection(
             OptimizerParams tripParams,
             DateTime arrivalTime,
             double travelHours,
@@ -60,21 +79,37 @@ namespace API_trip_link.Services.Optimizer
             var estimated    = arrivalTime.AddHours(travelHours);
             var arrivalOfDay = estimated.TimeOfDay;
 
-            bool beforeClose = arrivalOfDay < dest.ClosingTime;
+            if (arrivalOfDay < dest.OpeningTime)
+                return $"הגעה מוקדמת: {arrivalOfDay:hh\\:mm} לפני פתיחה {dest.OpeningTime:hh\\:mm} ({dest.Name})";
+
+            if (arrivalOfDay >= dest.ClosingTime)
+                return $"הגעה אחרי סגירה: {arrivalOfDay:hh\\:mm} ≥ {dest.ClosingTime:hh\\:mm} ({dest.Name})";
 
             var visitEnd  = estimated.AddHours(dest.VisitDuration);
             var returnEnd = visitEnd.AddHours(tripParams.ReturnTravelTime);
-            bool withinTrip = returnEnd <= tripParams.TripEndTime;
 
-            return beforeClose && withinTrip;
+            if (returnEnd.TimeOfDay > tripParams.TripEndTime.TimeOfDay
+                || returnEnd.Date > tripParams.TripEndTime.Date)
+                return $"חלון זמן: חזרה משוערת {returnEnd:HH:mm} (שהייה {dest.VisitDuration:F1}ש + חזרה {tripParams.ReturnTravelTime:F1}ש) " +
+                       $"אחרי סוף טיול {tripParams.TripEndTime:HH:mm} ({dest.Name})";
+
+            return null;
         }
+
+        public static bool CheckTimeWindow(
+            OptimizerParams tripParams,
+            DateTime arrivalTime,
+            double travelHours,
+            OptimizerDestination dest)
+            => ExplainTimeWindowRejection(tripParams, arrivalTime, travelHours, dest) == null;
 
         public static double CalculateTransitEfficiency(double publicTime, double carTime)
         {
-            if (publicTime <= 0 || carTime <= 0) return 0.5;
+            if (publicTime <= 0 || carTime <= 0) return 0;
             return Normalize(carTime / publicTime);
         }
         //פונקצית נירמול מחזירה ערך בין 0 ל 1
-        public static double Normalize(double v) => Math.Max(0.0, Math.Min(1.0, v));
+        public static double Normalize(double v) =>
+            Math.Max(Configuration.Common.ScoreMin, Math.Min(Configuration.Common.ScoreMax, v));
     }
 }

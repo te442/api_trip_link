@@ -12,6 +12,7 @@ namespace API_trip_link.Models
         public double   TransitEfficiency   { get; set; }
         public string?  Narrative           { get; set; }
         public List<TripLegDto>    Legs      { get; set; } = new();
+        public TripLegDto?         ReturnLeg { get; set; }
         public List<MapPointDto>   MapPoints { get; set; } = new();
     }
 
@@ -46,6 +47,7 @@ namespace API_trip_link.Models
     {
         public string BusNumber     { get; set; } = "";
         public string Direction     { get; set; } = "";
+        public string VehicleType   { get; set; } = "";
         public string FromStation   { get; set; } = "";
         public string ToStation     { get; set; } = "";
         public string DepartureTime { get; set; } = "";

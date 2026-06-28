@@ -513,6 +513,14 @@ INSERT INTO Nature_trip (natureTrip_id, trip_id, Num_break, Min_num_des, Max_num
 (6, 6, 1, 3, 5, 1, N'ירושלים והרי יהודה');
 SET IDENTITY_INSERT Nature_trip OFF;
 
+-- שעות פתיחה לכל יעד (ראה גם AlterDestinationOpeningHours.sql)
+UPDATE Destination SET opening_time = '08:00:00', closing_time = '18:00:00'
+WHERE Name_des LIKE N'%גן לאומי%' OR Name_des LIKE N'%שמורת%' OR Name_des LIKE N'%פארק נשר%'
+   OR Des_id IN (1,10,17,18,19,20,30,38,42,50,51,57,58,61,69,75,78,89,94,111,103,133,118,109,157,158,159,160,161,162,163,164,165,167,168,169,170);
+UPDATE Destination SET opening_time = '06:00:00', closing_time = '19:00:00'
+WHERE opening_time = '08:00:00' AND closing_time = '17:00:00';
+UPDATE Destination SET opening_time = '09:00:00', closing_time = '18:00:00' WHERE Des_id IN (9, 93);
+
 ALTER TABLE Categories_of_Destination CHECK CONSTRAINT FK_Categories_of_Destination_Categories;
 ALTER TABLE Categories_to_trip CHECK CONSTRAINT FK_Categories_to_trip_Categories;
 ALTER TABLE Des_of_trip CHECK CONSTRAINT FK_Des_of_trip_Destination;

@@ -10,6 +10,7 @@ namespace API_trip_link.Models
         public double   TransitEfficiency  { get; set; }
         public List<AvailableDestination> AvailableDestinations { get; set; } = new();
         public List<TripLeg> Legs          { get; set; } = new();
+        public TripLeg? ReturnLeg          { get; set; }
         public string   Narrative          { get; set; } = "";
     }
 
@@ -53,6 +54,7 @@ namespace API_trip_link.Models
         public int    BusId         { get; set; }
         public string BusNumber     { get; set; } = "";
         public string Direction     { get; set; } = "";
+        public string VehicleType   { get; set; } = "";
         public string FromStation   { get; set; } = "";
         public string ToStation     { get; set; } = "";
         public DateTime DepartureTime { get; set; }

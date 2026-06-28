@@ -1,4 +1,7 @@
+using API_trip_link.Settings;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using API_trip_link.Models;
@@ -94,6 +97,7 @@ namespace API_trip_link.Controllers
         [HttpGet("optimize/progress/{traceId}")]
         public ActionResult<OptimizationProgressDto> GetOptimizeProgress(string traceId)
         {
+            _optimizerService.EnsureProgress(traceId);
             var progress = _optimizerService.GetProgress(traceId);
             if (progress == null) return NotFound();
             return Ok(progress);
@@ -111,15 +115,17 @@ namespace API_trip_link.Controllers
                 var result = await _optimizerService.OptimizeTripAsync(request);
                 return Ok(result);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 //אם קרה שגיאה מחזירה שגיאה 400 ומציגה את השגיאה
-                return BadRequest(new { error = ex.Message });
+                var message = ex is API_trip_link.Services.Transit.GoogleMapsApiException gex
+                    ? gex.Message
+                    : ex.Message;
+                return BadRequest(new { error = message });
             }
         }
-        //פעולה המחזירה את התוצאות של אלגוריתם האופטימיזציה
-        //את התוכנית המפורטת של הטיול
         // GET api/trips/{id}/itinerary
+        // מחזיר את תוצאת האופטימיזר האחרונה לטיול (מטמון בזיכרון — לא חישוב מחדש)
         [HttpGet("{id}/itinerary")]
         public async Task<ActionResult<TripItineraryDto>> GetItinerary(int id)
         {
@@ -134,7 +140,7 @@ namespace API_trip_link.Controllers
         public async Task<IActionResult> SaveRoute(int id, [FromBody] List<int> destinationIds)
         {
             await _tripService.SaveOptimizedRouteAsync(id, destinationIds);
-            return Ok(new { message = "Route saved successfully" });
+            return Ok(new { message = Configuration.Api.RouteSavedSuccessMessage });
         }
     }
 }

@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API_trip_link.Data.Repositories
 {
+    //מחלקה אחראית על האופטמזציה
+    //מממשת את ממשק המנהל את הנתונים לאופטמזציה
     public class OptimizerDataRepository : IOptimizerDataRepository
     {
         private readonly TripContext _context;
@@ -11,7 +13,7 @@ namespace API_trip_link.Data.Repositories
         {
             _context = context;
         }
-
+        //פעולה המחזירה טיול
         public async Task<Trip?> GetTripForOptimizationAsync(int tripId)
         {
             return await _context.Trips
@@ -20,6 +22,7 @@ namespace API_trip_link.Data.Repositories
                 .Include(t => t.FeatureToTrips)
                 .FirstOrDefaultAsync(t => t.TripId == tripId);
         }
+        //פעולה המחזירה רשימת יעדים
 
         public async Task<List<Destination>> GetDestinationsForOptimizationAsync(
             string? region,
@@ -40,7 +43,7 @@ namespace API_trip_link.Data.Repositories
                 var trimmedRegion = region.Trim();
                 destQuery = destQuery.Where(d => d.Region != null && d.Region.Trim() == trimmedRegion);
             }
-
+            //רשימת היעדים המסוננים מאילוצים קשים
             var candidates = await destQuery.ToListAsync();
 
             if (levelId.HasValue)
@@ -73,7 +76,7 @@ namespace API_trip_link.Data.Repositories
 
             return candidates;
         }
-
+        //החזרת קווי אוטובוס לפי תחנות
         public async Task<List<BusStation>> GetBusLinesForStationAsync(int stationNum, int take = 3)
         {
             return await _context.BusStations

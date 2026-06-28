@@ -21,21 +21,27 @@ namespace API_trip_link.Models
         public List<OptimizationStepTraceDto> Steps { get; set; } = new();
         public int ScoreTableCellsBuilt { get; set; }
         public int ScoreTableCellsTotal { get; set; }
+        public int ScoreTableHttpRequestsCompleted { get; set; }
+        public int ScoreTableHttpRequestsEstimated { get; set; }
         public List<ScoreTableCellTraceDto> ScoreTableCells { get; set; } = new();
     }
 
     public class ScoreTableCellTraceDto
     {
+        public long   Seq              { get; set; }
         public int    I              { get; set; }
         public int    J              { get; set; }
         public int    H              { get; set; }
         public string FromLabel      { get; set; } = "";
         public string ToLabel        { get; set; } = "";
         public string DepartureTime  { get; set; } = "";
+        public string ApiKind        { get; set; } = "";
+        public bool   FromCache      { get; set; }
         public bool   IsValid        { get; set; }
         public double TransitionScore { get; set; }
         public double BusTransitHours { get; set; }
         public double WalkingHours    { get; set; }
         public double TransitEfficiency { get; set; }
+        public bool   HasDirectBus      { get; set; }
     }
 }

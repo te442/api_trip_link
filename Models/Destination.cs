@@ -27,6 +27,12 @@ namespace API_trip_link.Models
         [Column("Time_des")]
         public TimeSpan? TimeDes { get; set; }
 
+        [Column("opening_time")]
+        public TimeSpan OpeningTime { get; set; } = TimeSpan.FromHours(8);
+
+        [Column("closing_time")]
+        public TimeSpan ClosingTime { get; set; } = TimeSpan.FromHours(17);
+
         [Column("lat")]
         public decimal? Lat { get; set; }
 

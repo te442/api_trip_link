@@ -7,10 +7,12 @@ namespace API_trip_link.Services.Optimizer.Steps
     internal class Step4_InitialRouteBuilder : IOptimizerStep
     {
         private readonly ITransitApiService _transitApi;
+        private readonly ILogger<Step4_InitialRouteBuilder> _logger;
 
-        public Step4_InitialRouteBuilder(ITransitApiService transitApi)
+        public Step4_InitialRouteBuilder(ITransitApiService transitApi, ILogger<Step4_InitialRouteBuilder> logger)
         {
             _transitApi = transitApi;
+            _logger     = logger;
         }
 
         public int StepNumber => 4;
@@ -26,12 +28,14 @@ namespace API_trip_link.Services.Optimizer.Steps
                 {
                     scoreTableNull = ctx.ScoreTable == null,
                     nodeCount = ctx.ScoreTable?.NodeCount,
-                    hourCount = ctx.ScoreTable?.HourCount,
+                    minuteCount = ctx.ScoreTable?.MinuteCount,
                     destinationCount = ctx.Destinations.Count
                 },
                 "H5");
 
-            ctx.InitialRoute = routeBuilder.Build(ctx.ScoreTable, ctx.Destinations);
+            ctx.InitialRoute = routeBuilder.Build(
+                ctx.ScoreTable, ctx.Destinations,
+                logger: _logger, tripId: ctx.Request.TripId);
             return Task.CompletedTask;
         }
     }
