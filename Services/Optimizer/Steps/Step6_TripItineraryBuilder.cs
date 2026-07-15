@@ -6,6 +6,7 @@ using API_trip_link.Services.Transit;
 
 namespace API_trip_link.Services.Optimizer.Steps
 {
+    //מחלקה המנהלת את הפתרון הסופי
     internal class Step6_TripItineraryBuilder : IOptimizerStep
     {
         private readonly IOptimizerDataRepository _data;
@@ -27,8 +28,9 @@ namespace API_trip_link.Services.Optimizer.Steps
 
         public async Task ExecuteAsync(OptimizationContext ctx)
         {
+            //רשימת מזהה יעדים שנבחרו
             var selectedIds = new HashSet<int>(ctx.BestRoute.Destinations.Select(d => d.DestinationId));
-
+            //רשימת יעדים זמינים
             var available = ctx.Destinations.Select(d => new AvailableDestination
             {
                 DesId          = d.DestinationId,
@@ -42,7 +44,7 @@ namespace API_trip_link.Services.Optimizer.Steps
             var legs        = new List<TripLeg>();
             var currentTime = ctx.Params.TripStartTime;
             string prevLabel = ctx.Params.AddressStart;
-
+            //לולאת ריצה על כל היעדים 
             for (int i = 0; i < ctx.BestRoute.Destinations.Count; i++)
             {
                 var dest = ctx.BestRoute.Destinations[i];
@@ -55,7 +57,7 @@ namespace API_trip_link.Services.Optimizer.Steps
                 var leaveTime        = arrivalTime.AddHours(dest.VisitDuration);
 
                 var (busLines, boardingStation, alightingStation) = await BuildTransitDisplayAsync(arc, dest, i, ctx);
-
+                //פרטי אובייקט מעבר במסלול
                 legs.Add(new TripLeg
                 {
                     Order           = i + 1,
@@ -99,12 +101,12 @@ namespace API_trip_link.Services.Optimizer.Steps
                 ReturnLeg             = returnLeg,
                 Narrative             = BuildNarrative(ctx, legs, returnLeg, available)
             };
-
+            //לוגים
             OptimizerLog.Info(_logger, ctx,
                 "מסלול מפורט: {Legs} רגליים, {Selected} יעדים נבחרו מתוך {Available}",
                 legs.Count, ctx.BestRoute.Destinations.Count, available.Count);
         }
-
+        //פונקציה הבונה את קטע הנסיעה חזור
         private async Task<TripLeg?> BuildReturnLegAsync(OptimizationContext ctx, DateTime leaveTime)
         {
             if (ctx.BestRoute.Destinations.Count == 0)
@@ -138,15 +140,18 @@ namespace API_trip_link.Services.Optimizer.Steps
 
             var departureTime = option.DepartureTime < leaveTime ? leaveTime : option.DepartureTime;
             var busLines = MapGoogleStepsToBusLines(option.TransitSteps);
-
+            var arrivalTime = option.TransitSteps.Count > 0
+                 && option.TransitSteps[^1].ArrivalTime != default
+                      ? option.TransitSteps[^1].ArrivalTime
+                         : option.ArrivalTime;
             return new TripLeg
             {
                 Order = ctx.BestRoute.Destinations.Count + 1,
                 DesId = Configuration.Common.OriginDestinationId,
                 DestinationName = ctx.Params.AddressStart,
                 Region = "נקודת התחלה",
-                ArrivalTime = option.ArrivalTime,
-                DepartureTime = option.ArrivalTime,
+                ArrivalTime = arrivalTime,
+                DepartureTime = departureTime,
                 StayDuration = TimeSpan.Zero,
                 Transit = new TransitSegment
                 {
@@ -160,12 +165,12 @@ namespace API_trip_link.Services.Optimizer.Steps
                     WalkingMinutes = 0,
                     BusLines = busLines,
                     DepartureTime = departureTime,
-                    ArrivalTime = option.ArrivalTime,
+                    ArrivalTime = arrivalTime,
                     TransitEfficiency = 0
                 }
             };
         }
-
+        //פונקציה המחזירה רשימת פרטי הקווים
         private static List<BusLineInfo> MapGoogleStepsToBusLines(IReadOnlyList<GoogleTransitStep> steps)
             => steps.Select(s => new BusLineInfo
             {
@@ -177,7 +182,7 @@ namespace API_trip_link.Services.Optimizer.Steps
                 DepartureTime = s.DepartureTime,
                 ArrivalTime   = s.ArrivalTime
             }).ToList();
-
+        //פונקציה בונה את פרטי כל הנסיעה הקווים התחנות 
         private async Task<(List<BusLineInfo> busLines, StationInfo? boarding, StationInfo? alighting)>
             BuildTransitDisplayAsync(
                 ArcCost? arc,
@@ -200,7 +205,7 @@ namespace API_trip_link.Services.Optimizer.Steps
 
             return (fallbackLines, fallbackBoarding, dest.NearestStation);
         }
-
+        //מחזירה פרטי קווים לקו מסוים
         private static List<BusLineInfo> MapTransitStepsToBusLines(IReadOnlyList<TransitLegStep> steps)
             => steps.Select(s => new BusLineInfo
             {
@@ -260,7 +265,7 @@ namespace API_trip_link.Services.Optimizer.Steps
                 ToStation   = station.StationName
             }).ToList();
         }
-
+        //בניית אובייקט התוצאה הסופית של המסלול כולל את כל הפרטים
         private static string BuildNarrative(
             OptimizationContext ctx,
             List<TripLeg> legs,

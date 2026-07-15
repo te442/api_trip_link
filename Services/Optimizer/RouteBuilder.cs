@@ -86,7 +86,7 @@ namespace API_trip_link.Services.Optimizer
                             tripId, fromLabel, currentArrival);
                         break;
                     }
-
+                    //הפעלת הפונקציה לקבלת היעד בעמודה הטוב 
                     var pick = scoreTable.GetBestInColumn(fromIndex, minuteIndex, feasibleCandidates);
                     if (pick == null)
                     {
@@ -154,7 +154,7 @@ namespace API_trip_link.Services.Optimizer
                 tripId, route.Destinations.Count, route.TotalScore, route.TotalTime, route.IsValid);
             return route;
         }
-
+        //פונקציה בודקת האם ניתן להוסיף יעד למסלול בחלון הזמן
         private bool CanExtendRoute(
             OptimizerDestination candidate,
             ArcCost arc,

@@ -22,35 +22,27 @@ namespace API_trip_link.Services.Optimizer.Steps
         //מקבלת אובייקט המכיל את כל הנתונים לצורך האלגוריתם
         public Task ExecuteAsync(OptimizationContext ctx)
         {
-            //
+           
             var arcCalculator = new ArcCostCalculator(_transitApi, ctx.Params);
             var routeBuilder  = new RouteBuilder(ctx.Params, arcCalculator);
             var tripId        = ctx.Request.TripId;
             //יצירת פתרון התחלתי 
             var currentRoute = ctx.InitialRoute;
-            //והעתקתו לפתרון הטוב ביותר
             var bestRoute    = currentRoute.Copy();
-            //הגדרת טמפרטורה התחלתית
             double temperature = Configuration.Optimizer.SaInitialTemperature;
             //יצירת אובייקט מסוג תוצאה של האלגוריתם
             var saResult = new SaLoopResult();
             int accepted = 0, rejected = 0;
             //לולאת loop של האלגוריתם הראשי
-            //הלולאה רצה בתנאי ש הטמפרטורה המקוררת הנוכחית קטנה מהטמפרטורה המינימלית 
-            //ושמספר האיטרציה הנוכחית קטן מהמספר המקסימלי של האיטרציות
             for (int i = 1; i <= Configuration.Optimizer.SaMaxIterations && temperature > Configuration.Optimizer.SaMinTemperature; i++)
             {
                 var iterationSnapshot = ctx.Instrumentation?.BeginSaIteration(i, currentRoute.TotalScore);
-                //יצירת פתרון שכן
                 var neighbor = GetNeighborRoute(currentRoute, ctx, routeBuilder, tripId, UsageScope.SA_Iteration);
-                //בדיקת האם הפתרון שכן תקין
                 if (!neighbor.IsValid)
                 {
-                    //אם הפתרון שכן אינו תקין נדחה ונעלה את מספר הדחיות
                     rejected++;
                     if (iterationSnapshot.HasValue)
                         ctx.Instrumentation?.EndSaIteration(iterationSnapshot.Value, currentRoute.TotalScore, accepted: false, bestUpdated: false);
-                    //נקרר את הטמפרטורה
                     temperature *= (1.0 - Configuration.Optimizer.SaCoolingRate);
                     continue;
                 }
@@ -61,9 +53,7 @@ namespace API_trip_link.Services.Optimizer.Steps
                 {
                     currentRoute = neighbor;
                     accepted++;
-                    //חישוב עלות הפתרון השכן
                     double nC = CombinedCost(neighbor);
-                    //חישוב עלות הפתרון הטוב ביותר
                     double bC = CombinedCost(bestRoute);
                     //בודקת האם השיא בניקוד של הפתרון הנוכחי גדול מהשיא בניקוד של הפתרון הטוב ביותר
                     if (nC > bC)
@@ -80,7 +70,7 @@ namespace API_trip_link.Services.Optimizer.Steps
                 }
                 if (iterationSnapshot.HasValue)
                     ctx.Instrumentation?.EndSaIteration(iterationSnapshot.Value, currentRoute.TotalScore, acceptedSolution, bestUpdated);
-                //נקרר את הטמפרטורה
+                //קירור הטמפרטורה
                 temperature *= (1.0 - Configuration.Optimizer.SaCoolingRate);
             }
             //מכניס את התוצאות לאובייקט מסוג תוצאה של האלגוריתם
@@ -91,7 +81,7 @@ namespace API_trip_link.Services.Optimizer.Steps
 
             ctx.SaResult  = saResult;
             ctx.BestRoute = bestRoute;
-
+            //לוגים
             var routeNames = string.Join(" → ", bestRoute.Destinations.Select(d => d.Name));
             OptimizerLog.Info(_logger, ctx,
                 "SA הסתיים: איטרציות={Iter}, מקובלים={Acc}, נדחו={Rej}, מסלול סופי [{Count}]: {Route}, ציון={Score:F2}",

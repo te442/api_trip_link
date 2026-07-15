@@ -27,9 +27,7 @@ namespace API_trip_link.Services
             return Task.FromResult<TripItineraryDto?>(OptimizeResultMapper.ToItineraryDto(cached));
         }
 
-        /// <summary>
-        /// משלים תמונות וקואורדינטות לתוצאת אופטימיזציה (נקרא אחרי שלב 6 בצינור).
-        /// </summary>
+        
         public async Task EnrichWithImagesAsync(OptimizeResultDto result)
         {
             var ids = result.Legs.Select(l => l.DesId).ToList();

@@ -16,12 +16,9 @@ namespace API_trip_link.Controllers
     {
         //שירותי הטיולים
         private readonly TripService       _tripService;
-        //שירותי האופטימיזציה
         private readonly IOptimizerService _optimizerService;
-        //שירותי האינטרייטרי
         private readonly ItineraryService  _itineraryService;
 
-        //פעולה בונה שמקבלת את השירותים ומציבה אותם במשתנים הפרימיטיביים
         public TripsController(
             TripService tripService,
             IOptimizerService optimizerService,
@@ -40,7 +37,6 @@ namespace API_trip_link.Controllers
         //הפעולה מחזירה רשימה של טיולים ומחזירה אותה בפורמט של JSON
         public async Task<ActionResult<List<TripDto>>> GetAll()
         {
-            //פעולה אסינכרונית שמחזירה רשימה של טיולים
             var trips = await _tripService.GetAllTripsAsync();
             return Ok(trips);
         }
@@ -49,9 +45,7 @@ namespace API_trip_link.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<TripDto>> GetById(int id)
         {
-            //פעולה אסינכרונית שמחזירה טיול לפי מזהה טיול
             var trip = await _tripService.GetTripByIdAsync(id);
-            //אם הטיול לא נמצא מחזיר שגיאה 404
             if (trip == null) return NotFound();
             return Ok(trip);
         }
@@ -72,14 +66,11 @@ namespace API_trip_link.Controllers
         {
             try
             {
-                //פעולה אסינכרונית שמוסיפה אובייקט מסוג CreateTripDto לבסיס הנתונים
                 var trip = await _tripService.CreateTripAsync(dto);
                 return CreatedAtAction(nameof(GetById), new { id = trip.TripId }, trip);
             }
-            //אם קרה שגיאה מחזירה שגיאה 400
             catch (Exception ex)
             {
-                //מחזירה שגיאה 400 ומציגה את השגיאה
                 return BadRequest(new { error = ex.InnerException?.Message ?? ex.Message });
             }
         }
@@ -92,7 +83,7 @@ namespace API_trip_link.Controllers
             if (!deleted) return NotFound();
             return NoContent();
         }
-
+        //פעולה עוקבת אחר התקדמות ריצת האלגוריתם מקבלת מזהה ריצה
         // GET api/trips/optimize/progress/{traceId}
         [HttpGet("optimize/progress/{traceId}")]
         public ActionResult<OptimizationProgressDto> GetOptimizeProgress(string traceId)
@@ -111,13 +102,11 @@ namespace API_trip_link.Controllers
         {
             try
             {
-                //פעולה אסינכרונית שמריץ את אלגוריתם האופטימיזציה
                 var result = await _optimizerService.OptimizeTripAsync(request);
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                //אם קרה שגיאה מחזירה שגיאה 400 ומציגה את השגיאה
                 var message = ex is API_trip_link.Services.Transit.GoogleMapsApiException gex
                     ? gex.Message
                     : ex.Message;
@@ -125,7 +114,7 @@ namespace API_trip_link.Controllers
             }
         }
         // GET api/trips/{id}/itinerary
-        // מחזיר את תוצאת האופטימיזר האחרונה לטיול (מטמון בזיכרון — לא חישוב מחדש)
+        // מחזיר את תוצאת האופטימיזר האחרונה לטיול -זכרון RAM 
         [HttpGet("{id}/itinerary")]
         public async Task<ActionResult<TripItineraryDto>> GetItinerary(int id)
         {

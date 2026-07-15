@@ -4,6 +4,7 @@ using API_trip_link.Services.Transit;
 
 namespace API_trip_link.Services.Optimizer.Steps
 {
+    //מחלקה בניי פתרון התחלתי
     internal class Step4_InitialRouteBuilder : IOptimizerStep
     {
         private readonly ITransitApiService _transitApi;

@@ -13,16 +13,18 @@ namespace API_trip_link.Services.Optimizer
         public TransitScheduleCollector(ITransitApiService transitApi, IConfiguration config)
         {
             _transitApi = transitApi;
+            //טווח בדיקה מנקודת ההתחלה
             _originDepartureWindowMinutes = Math.Clamp(
                 config.GetValue("Optimizer:OriginDepartureWindowMinutes", Configuration.Optimizer.DefaultOriginDepartureWindowMinutes),
                 Configuration.Optimizer.MinOriginDepartureWindowMinutes,
                 Configuration.Optimizer.MaxOriginDepartureWindowMinutes);
+            //קפיצה טווח קדימה במקרה ואין מסלול
             _noResultAdvanceMinutes = Math.Clamp(
                 config.GetValue("Optimizer:EventNoResultAdvanceMinutes", Configuration.Optimizer.DefaultEventNoResultAdvanceMinutes),
                 Configuration.Optimizer.MinEventNoResultAdvanceMinutes,
                 Configuration.Optimizer.MaxEventNoResultAdvanceMinutes);
         }
-
+        //ניהול קריאות ה API וחישוב זמני נסיעה בין שני יעדים
         public async Task<TransitScheduleCollectResult> CollectArcAsync(
             TransitLocation from,
             TransitLocation to,
@@ -36,24 +38,27 @@ namespace API_trip_link.Services.Optimizer
             Action<ScoreTableCellTraceDto>? onCell = null,
             OptimizerRejectionTracker? rejections = null)
         {
+            //חלון הזמן
             var tripStart = tripParams.TripStartTime;
             var tripEnd = tripParams.TripEndTime;
             int minuteCount = ScoreTable.ComputeMinuteCount(tripStart, tripEnd);
             var midTime = tripStart.AddMinutes((tripEnd - tripStart).TotalMinutes / 2);
+            //קביעת חלון זמן סריקה
             var scanEnd = fromIndex == Configuration.Common.OriginNodeIndex
                 ? Min(tripEnd, tripStart.AddMinutes(_originDepartureWindowMinutes))
                 : tripEnd;
-
+            
             var eventsByMinute = new Dictionary<int, TransitEvent>();
             DateTime queryTime = tripStart;
             double? carBaseline = null;
-
+            //לולאת סריקה בחלון הזמן
             while (queryTime <= scanEnd)
             {
+                //קריאה לקבלת מסלולי נסיעה מגוגל
                 int httpBefore = _transitApi.HttpRequestCount;
                 var batch = await _transitApi.GetDepartureOptionsAsync(from, to, queryTime);
                 var maxReturnedDeparture = GetMaxReturnedDeparture(batch, tripStart, tripStart, scanEnd);
-
+                //רישום למעקב ודיבוג - לוג
                 ReportApiQuery(
                     onApiQuery, fromIndex, toIndex, fromLabel, toDest.Name,
                     queryTime, tripStart, minuteCount, "תחבורה",
@@ -61,13 +66,13 @@ namespace API_trip_link.Services.Optimizer
                     isValid: batch.HasAnyRoute,
                     optionCount: batch.Options.Count,
                     carBaseline: carBaseline ?? 0);
-
+                //אם לא התקבל מידע פממשיכים לחפש מהדקה הבאה
                 if (!batch.HasAnyRoute)
                 {
                     queryTime = queryTime.AddMinutes(_noResultAdvanceMinutes);
                     continue;
                 }
-
+                //קריאת API חישוב נסיעה ברכב
                 if (carBaseline == null)
                 {
                     httpBefore = _transitApi.HttpRequestCount;
@@ -80,7 +85,7 @@ namespace API_trip_link.Services.Optimizer
                         optionCount: 0,
                         carBaseline: carBaseline.Value);
                 }
-
+                //פעולה האחראית אחסון הנסיעות שהתקבלו
                 var lastStoredDeparture = IngestDepartureBatch(
                     batch, tripStart, tripEnd, minuteCount, carBaseline.Value,
                     fromDest, toDest, tripParams, fromIndex, toIndex, fromLabel,
@@ -88,7 +93,7 @@ namespace API_trip_link.Services.Optimizer
                     originDepartureCutoff: fromIndex == Configuration.Common.OriginNodeIndex
                         ? tripStart.AddMinutes(_originDepartureWindowMinutes)
                         : null);
-
+                //חיפוש הבא החל מהזמן האחרון שהתקבל+ דקה
                 var nextBoundary = lastStoredDeparture ?? maxReturnedDeparture;
                 var nextQueryTime = nextBoundary == null
                     ? queryTime.AddMinutes(_noResultAdvanceMinutes)
@@ -99,14 +104,14 @@ namespace API_trip_link.Services.Optimizer
 
                 queryTime = nextQueryTime;
             }
-
+            //החזרת התוצאות כולל האירועים- זמני הנסיעות שנקלטו
             return new TransitScheduleCollectResult
             {
                 Events = eventsByMinute.Values.OrderBy(e => e.DepartureTime).ToList(),
                 CarBaselineHours = carBaseline ?? 0
             };
         }
-
+        //פעולה שבונה אובייקט למעקב בדיבוג על קריאות ה-API
         private static void ReportApiQuery(
             Action<ScoreTableCellTraceDto>? onApiQuery,
             int fromIndex,
@@ -140,7 +145,7 @@ namespace API_trip_link.Services.Optimizer
                 HasDirectBus = false
             });
         }
-
+        //פעולה האחראית על אחסון הנסיעות שהתקבלו
         private static DateTime? IngestDepartureBatch(
             TransitDepartureBatch batch,
             DateTime tripStart,
@@ -162,11 +167,13 @@ namespace API_trip_link.Services.Optimizer
 
             foreach (var option in batch.Options)
             {
+                //בדיקת תקינות התוצאה
                 var departure = NormalizeDepartureToTripDate(option.DepartureTime, tripStart);
                 if (!IsWithinTripDepartureWindow(departure, tripStart, tripEnd)) continue;
                 if (originDepartureCutoff != null && departure > originDepartureCutoff.Value) continue;
 
                 int minuteIndex = ScoreTable.TimeToMinuteIndexStatic(departure, tripStart, minuteCount);
+                //פעולה האחראית על בניית אובייקט מסוג ArcTransitionRecord שמכיל את כל המידע על הנסיעה
                 var record = BuildRecord(option, carBaseline, fromDest, toDest, tripParams, departure, fromLabel, rejections);
                 var transitEvent = new TransitEvent
                 {
@@ -175,10 +182,10 @@ namespace API_trip_link.Services.Optimizer
                     Duration = TimeSpan.FromHours(option.DurationHours),
                     Record = record
                 };
-
+                //רישום למילון דיבוג
                 if (!TryUpsert(eventsByMinute, minuteIndex, transitEvent))
                     continue;
-
+                //פונקציה המכניסה 
                 onCell?.Invoke(new ScoreTableCellTraceDto
                 {
                     I = fromIndex,
@@ -195,14 +202,14 @@ namespace API_trip_link.Services.Optimizer
                     TransitEfficiency = Math.Round(record.ArcCost.TransitEfficiency, 2),
                     HasDirectBus = record.ArcCost.HasDirectBus
                 });
-
+                //דקת היציאה המאוחרת להמשך ריצת הלולאה הראשית
                 if (lastDeparture == null || departure > lastDeparture)
                     lastDeparture = departure;
             }
 
             return lastDeparture;
         }
-
+        //המרת אפשרות נסיעה לאובייקט מסוג ArcTransitionRecord 
         private static ArcTransitionRecord BuildRecord(
             TransitDepartureOption option,
             double carBaselineHours,
@@ -239,7 +246,7 @@ namespace API_trip_link.Services.Optimizer
 
             if (rejection != null)
                 rejections?.Record(fromLabel, toDest.Name, departureTime, rejection);
-
+            //החזרת האובייקט מכיל קשת ציון ותקינות
             return new ArcTransitionRecord
             {
                 ArcCost = arc,
@@ -247,7 +254,7 @@ namespace API_trip_link.Services.Optimizer
                 IsValid = optimality >= 0
             };
         }
-
+        // לכל תא נשמר ציון אחד הגבוה ביותר
         private static bool TryUpsert(
             Dictionary<int, TransitEvent> eventsByMinute,
             int minuteIndex,
@@ -275,7 +282,7 @@ namespace API_trip_link.Services.Optimizer
 
             return false;
         }
-
+        //דקת היציאה המאוחרת ביותר
         private static DateTime? GetMaxReturnedDeparture(
             TransitDepartureBatch batch,
             DateTime tripStart,
@@ -293,13 +300,13 @@ namespace API_trip_link.Services.Optimizer
 
             return max;
         }
-
+        //תקינות תאריך מקריאת ה API
         private static DateTime NormalizeDepartureToTripDate(DateTime departure, DateTime tripStart)
         {
             if (departure.Date == tripStart.Date) return departure;
             return tripStart.Date.Add(departure.TimeOfDay);
         }
-
+        //תקין בחלון הזמן
         private static bool IsWithinTripDepartureWindow(DateTime departure, DateTime tripStart, DateTime tripEnd)
         {
             var time = departure.TimeOfDay;
@@ -307,7 +314,7 @@ namespace API_trip_link.Services.Optimizer
         }
 
         private static DateTime Min(DateTime a, DateTime b) => a <= b ? a : b;
-
+        //פעולה הממירה את רשימת הצעדים של תחבורה ציבורית לאובייקט מסוג TransitLegStep
         private static List<TransitLegStep> MapTransitSteps(List<GoogleTransitStep> steps)
             => steps.Select(s => new TransitLegStep
             {
@@ -320,7 +327,7 @@ namespace API_trip_link.Services.Optimizer
                 DurationHours = s.DurationHours
             }).ToList();
     }
-
+    //מחלקה הכוללת את האירועים שנאספו ואת זמן הנסיעה ברכב
     internal sealed class TransitScheduleCollectResult
     {
         public List<TransitEvent> Events { get; set; } = new();

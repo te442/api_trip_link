@@ -32,7 +32,7 @@ namespace API_trip_link.Services.Optimizer.Steps
             //דיבוג
             AgentDebugLog.Write("Step2_ScoreTableBuilder", "Step2 started",
                 new { destCount = ctx.Destinations.Count }, "H6");
-
+            //תאריך הטיול תקין
             var (clampedStart, clampedEnd, clampNote) = TripScheduleDateHelper.ClampForGoogleTransit(
                 ctx.Params.TripStartTime, ctx.Params.TripEndTime);
             ctx.Params.TripStartTime = clampedStart;
@@ -51,7 +51,7 @@ namespace API_trip_link.Services.Optimizer.Steps
             int nodeCount  = n + 1;
             int minuteCount = ScoreTable.ComputeMinuteCount(tripParams.TripStartTime, tripParams.TripEndTime);
             int originIndex = Configuration.Common.OriginNodeIndex;
-
+            //הגדרת מקביליות
             int concurrency = Math.Clamp(
                 _config.GetValue("Optimizer:ScoreTableConcurrency", Configuration.Optimizer.DefaultScoreTableConcurrency),
                 Configuration.Optimizer.MinScoreTableConcurrency,
@@ -67,7 +67,6 @@ namespace API_trip_link.Services.Optimizer.Steps
                 .ThenBy(p => p.I)
                 .ThenBy(p => p.J)
                 .ToList();
-            // Event-driven estimate: each arc starts with a bounded Google event query, not a minute grid scan.
             int estimatedHttpRequests = arcPairs.Count;
 
             _transitApi.ResetHttpRequestCount();
@@ -82,7 +81,7 @@ namespace API_trip_link.Services.Optimizer.Steps
             var eventStoreLock = new object();
 
             var traceLock = new object();
-
+            //פונקצית הוספת מידע לטבלת ציונים שימוש בסמפור
             void ReportRow(ScoreTableCellTraceDto row)
             {
                 lock (traceLock)
@@ -108,7 +107,7 @@ namespace API_trip_link.Services.Optimizer.Steps
                     {
                         int i = pair.I;
                         int j = pair.J;
-                        //יעדנ
+                        //יעד
                         var toDest   = destinations[j - 1];
                         //מקור בדיקה האם זו נקודת ההתחלה
                         var fromDest = i == originIndex ? null : destinations[i - 1];
@@ -116,7 +115,7 @@ namespace API_trip_link.Services.Optimizer.Steps
                         //הגדרת המיקום המדויק של קווי האורך והרוחב
                         var fromLoc = BuildLocation(fromDest, tripParams, isOrigin: fromDest == null);
                         var toLoc   = BuildLocation(toDest, tripParams, isOrigin: false);
-
+                        //הפעלת השירות המנהל את הקריאת קשתות
                         var result = await collector.CollectArcAsync(
                             fromLoc, toLoc, fromDest, toDest, tripParams,
                             i, j, fromLabel,
@@ -194,6 +193,7 @@ namespace API_trip_link.Services.Optimizer.Steps
         private static TransitLocation BuildLocation(
             OptimizerDestination? dest, OptimizerParams tripParams, bool isOrigin)
         {
+            //יעד מקור
             if (isOrigin)
             {
                 return new TransitLocation
@@ -204,7 +204,7 @@ namespace API_trip_link.Services.Optimizer.Steps
                     Longitude     = tripParams.StartLongitude
                 };
             }
-
+            
             return new TransitLocation
             {
                 DestinationId = dest!.DestinationId,

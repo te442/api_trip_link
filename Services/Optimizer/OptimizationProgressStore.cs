@@ -7,6 +7,7 @@ using API_trip_link.Models;
 namespace API_trip_link.Services.Optimizer
 
 {
+    //מחלקה אחראית מעקב התקדמות ועדכון המשתמש
 
     public interface IOptimizationProgressStore
 
@@ -32,24 +33,17 @@ namespace API_trip_link.Services.Optimizer
 
     }
 
-
-
     internal sealed class OptimizationProgressStore : IOptimizationProgressStore
 
     {
-
         private readonly ConcurrentDictionary<string, OptimizationProgressDto> _sessions = new();
 
         private readonly ConcurrentDictionary<string, List<ScoreTableCellTraceDto>> _pendingPollCells = new();
 
         private readonly ConcurrentDictionary<string, long> _seqCounters = new();
-
-
-
         public void Ensure(string traceId)
 
         {
-
             _sessions.TryAdd(traceId, new OptimizationProgressDto { TraceId = traceId });
 
             _pendingPollCells.TryAdd(traceId, new List<ScoreTableCellTraceDto>());
@@ -162,32 +156,20 @@ namespace API_trip_link.Services.Optimizer
 
                 return;
 
-
-
             session.ScoreTableHttpRequestsCompleted = completedHttpRequests;
 
         }
-
-
-
+        //פעולה הכוללת מנעול כדי למנוע race condition
         public void AddScoreTableCell(string traceId, ScoreTableCellTraceDto cell)
-
         {
-
             Ensure(traceId);
 
             if (!_sessions.TryGetValue(traceId, out var session))
 
                 return;
-
-
-
             cell.Seq = _seqCounters.AddOrUpdate(traceId, 1, (_, v) => v + 1);
 
             session.ScoreTableCellsBuilt++;
-
-
-
             var pending = _pendingPollCells.GetOrAdd(traceId, _ => new List<ScoreTableCellTraceDto>());
 
             lock (pending)
@@ -211,9 +193,6 @@ namespace API_trip_link.Services.Optimizer
             if (!_sessions.TryGetValue(traceId, out var session))
 
                 return;
-
-
-
             ClearPending(traceId);
 
             session.ScoreTableCells      = cells.ToList();
@@ -223,8 +202,6 @@ namespace API_trip_link.Services.Optimizer
             session.ScoreTableCellsTotal = cells.Count;
 
         }
-
-
 
         public OptimizationProgressDto? Get(string traceId)
 

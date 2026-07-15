@@ -6,6 +6,7 @@ using API_trip_link.Settings;
 
 namespace API_trip_link.Services.Transit
 {
+    //מחלקה אחראית על השלמת כתובות
     public class GooglePlacesAutocompleteService : IPlacesAutocompleteService
     {
         private const string DefaultPlacesBaseUrl = "https://places.googleapis.com";
@@ -24,7 +25,7 @@ namespace API_trip_link.Services.Transit
             _httpClient = httpClient;
             _config = config;
         }
-
+        //פונקציה לקריאת השירות 
         public async Task<List<PlaceSuggestionDto>> AutocompleteAsync(string input)
         {
             var query = input?.Trim() ?? "";
@@ -45,7 +46,7 @@ namespace API_trip_link.Services.Transit
                 LanguageCode = language,
                 IncludedRegionCodes = new[] { Configuration.Transit.DefaultGoogleMapsRegion }
             };
-
+            //בנית הבקשה
             using var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Add("X-Goog-Api-Key", apiKey);
             request.Headers.Add("X-Goog-FieldMask", PlacesFieldMask);

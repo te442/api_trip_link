@@ -15,10 +15,7 @@ namespace API_trip_link.Controllers
     [Route("api/[controller]")]
     public class LookupsController : ControllerBase
     {
-        //שירותי האילוצים
         private readonly LookupService _lookupService;
-
-        //פעולה בונה שמקבלת את השירותים ומציבה אותם במשתנים הפרימיטיביים
         public LookupsController(LookupService lookupService)
         {
             _lookupService = lookupService;
@@ -29,7 +26,6 @@ namespace API_trip_link.Controllers
         [HttpGet("categories")]
         public async Task<ActionResult<List<CategoryDto>>> GetCategories()
         {
-            //פעולה אסינכרונית המחזירה תגובת שרת
             return Ok(await _lookupService.GetCategoriesAsync());
         }
 
@@ -38,7 +34,6 @@ namespace API_trip_link.Controllers
         [HttpGet("levels")]
         public async Task<ActionResult<List<DifficultyLevelDto>>> GetLevels()
         {
-            //פעולה אסינכרונית המחזירה תגובת שרת
             return Ok(await _lookupService.GetLevelsAsync());
         }
 
@@ -47,7 +42,6 @@ namespace API_trip_link.Controllers
         [HttpGet("traveler-types")]
         public async Task<ActionResult<List<TravelerTypeDto>>> GetTravelerTypes()
         {
-            //פעולה אסינכרונית המחזירה תגובת שרת
             return Ok(await _lookupService.GetTravelerTypesAsync());
         }
 
@@ -56,7 +50,6 @@ namespace API_trip_link.Controllers
         [HttpGet("features")]
         public async Task<ActionResult<List<FeatureTypeDto>>> GetFeatures()
         {
-            //פעולה אסינכרונית המחזירה תגובת שרת
             return Ok(await _lookupService.GetFeaturesAsync());
         }
 
@@ -65,7 +58,6 @@ namespace API_trip_link.Controllers
         [HttpGet("regions")]
         public async Task<ActionResult<List<string>>> GetRegions()
         {
-            //פעולה אסינכרונית המחזירה תגובת שרת
             return Ok(await _lookupService.GetRegionsAsync());
         }
     }

@@ -4,6 +4,7 @@ namespace API_trip_link.Services.Optimizer
 {
     internal static class OptimizerLog
     {
+        //מחלקת עזר לרישום לוגים
         public static void StepStart(ILogger logger, OptimizationContext ctx, int stepNumber, string stepName, string? detail = null)
         {
             logger.LogInformation(

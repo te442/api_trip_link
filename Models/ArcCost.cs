@@ -2,6 +2,7 @@ namespace API_trip_link.Models
 {
     internal class ArcCost
     {
+        //מבנה של קשת - מעבר בין יעדים
         public int      FromDestinationId  { get; set; }
         public int      ToDestinationId    { get; set; }
         public DateTime BestDepartureTime  { get; set; }

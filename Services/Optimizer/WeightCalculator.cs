@@ -3,16 +3,13 @@ using API_trip_link.Models;
 
 namespace API_trip_link.Services.Optimizer
 {
-    internal static class WeightCalculator
+    internal static class WeightCalculator//פונקציה המחשבת אופטמליות ליעד
     {
-        public static double ComputeDynamicRequirements(double avg, double stdDev)//לשנול שלא להפעיל מהמוק ולשלוח נתוני דמה
-        {
+        public static double ComputeDynamicRequirements(double avg, double stdDev) { 
             if (avg <= 0) return Configuration.Optimizer.DefaultDynamicRequirementsWhenNoData;
             double cv = stdDev / avg;
             return Math.Max(Configuration.Common.ScoreMin, Math.Min(Configuration.Common.ScoreMax, cv));
         }
-        //פונקציה מחשבת את הציון האופטימלי של היעד
-        //מקבלת את היעד, את הפרמטרים של הטיול, את הזמן של היציאה מהמקור, את הזמן של הנסיעה הישרה ואת הזמן של הנסיעה ברכב
         //מחזירה את הציון האופטימלי של היעד
         public static double CalculateDestinationOptimality(
             OptimizerDestination dest,
@@ -27,7 +24,7 @@ namespace API_trip_link.Services.Optimizer
                 directTravelTime, indirectTravelTime,
                 routeMatchesTraveler, hasDeadEnd).Score;
 
-        /// <summary>מחזיר ציון וסיבת פסילה (אם יש).</summary>
+        /// <summary>מחזיר ציון וסיבת פסילה אם יש).</summary>
         public static (double Score, string? RejectionReason) EvaluateDestinationOptimality(
             OptimizerDestination dest,
             OptimizerParams tripParams,
@@ -95,14 +92,14 @@ namespace API_trip_link.Services.Optimizer
 
             return null;
         }
-
+        //בדיקת חלון הזמן
         public static bool CheckTimeWindow(
             OptimizerParams tripParams,
             DateTime arrivalTime,
             double travelHours,
             OptimizerDestination dest)
             => ExplainTimeWindowRejection(tripParams, arrivalTime, travelHours, dest) == null;
-
+        //יעילות תח"צ
         public static double CalculateTransitEfficiency(double publicTime, double carTime)
         {
             if (publicTime <= 0 || carTime <= 0) return 0;

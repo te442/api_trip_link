@@ -9,7 +9,6 @@ namespace API_trip_link.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        //שירותי הכניסה / היצירה
         private readonly AuthService _authService;
 
         //פעולה בונה שמקבלת את השירותים ומציבה אותם במשתנים הפרימיטיביים
@@ -27,16 +26,13 @@ namespace API_trip_link.Controllers
         {
             try
             {
-                //פעולה אסינכרונית שמוסיפה אובייקט מסוג RegisterDto לבסיס הנתונים
                 var result = await _authService.RegisterAsync(dto);
                 return Ok(result);
             }
-            //אם קרה שגיאה מחזירה שגיאה 400
             catch (ArgumentException ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
-            //אם קרה שגיאה מחזירה שגיאה 409
             catch (InvalidOperationException ex)
             {
                 return Conflict(new { error = ex.Message });
@@ -51,11 +47,9 @@ namespace API_trip_link.Controllers
         {
             try
             {
-                //פעולה אסינכרונית שמאפשרת למשתמש להתחבר למערכת
                 var result = await _authService.LoginAsync(dto);
                 return Ok(result);
             }
-            //אם קרה שגיאה מחזירה שגיאה 401
             catch (UnauthorizedAccessException ex)
             {
                 return Unauthorized(new { error = ex.Message });

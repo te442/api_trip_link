@@ -2,7 +2,6 @@ using API_trip_link.Models;
 
 namespace API_trip_link.Services.Optimizer
 {
-    /// <summary>דיבוג שלב-שלב של האופטימיזר וקריאות Google Maps ב-ScoreTable.</summary>
     internal static class OptimizerDebugTrace
     {
         private static readonly AsyncLocal<ScoreTableDebugScope?> _scope = new();
@@ -20,7 +19,7 @@ namespace API_trip_link.Services.Optimizer
 
         public static bool IsScoreTableActive => _scope.Value != null;
 
-        /// <summary>עצירה בדיבוג + הודעה ב-Output. לחצי F5 (Continue) למעבר לשלב הבא.</summary>
+        //דיבוג
         public static void PauseStep(int stepNumber, string stepName, string phase, string? detail = null)
         {
 #if DEBUG

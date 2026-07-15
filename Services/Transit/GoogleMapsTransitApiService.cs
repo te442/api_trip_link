@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace API_trip_link.Services.Transit
 {
+    //מחלקת שירות הקריאות לגוגל מפס
     public class GoogleMapsTransitApiService : ITransitApiService
     {
         private readonly HttpClient _httpClient;
@@ -75,7 +76,7 @@ namespace API_trip_link.Services.Transit
                 return EmptyTransitResult(walkingHours);
             }
         }
-        //פונקציה המקבלת רשימת אפשרויות יציאה בין שני מקומות
+        //פונקציה המקבלת מיקומים וזמן יציאה בין שני מקומות ומחזירה את אפשרויות הניסעות
         public async Task<TransitDepartureBatch> GetDepartureOptionsAsync(
             TransitLocation from,
             TransitLocation to,
@@ -218,13 +219,13 @@ namespace API_trip_link.Services.Transit
         private async Task<ParsedLeg?> FetchDirectionsLegAsync(
             string origin, string destination, string mode, long departureUnix, string apiKey, bool alternatives)
         {
-            //הכנת כתובת הבקשה פרוטוקול ועוד נתונים
+            //הכנת כתובת הבקשה פרוטוקול 
             var baseUrl  = _config["GoogleMaps:BaseUrl"] ?? Configuration.Transit.DefaultGoogleMapsBaseUrl;
             if (!baseUrl.StartsWith(Configuration.Common.RequiredUrlScheme, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("GoogleMaps:BaseUrl must use HTTPS.");
             var region   = _config["GoogleMaps:Region"] ?? Configuration.Transit.DefaultGoogleMapsRegion;
             var language = _config["GoogleMaps:Language"] ?? Configuration.Transit.DefaultGoogleMapsLanguage;
-            //הכנת פרמטרים של הבקשה בצורת מילון
+            //הכנת פרמטרים של הבקשה 
             var queryParams = new Dictionary<string, string?>
             {
                 ["origin"]         = origin,

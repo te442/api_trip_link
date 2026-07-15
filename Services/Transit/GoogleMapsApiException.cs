@@ -2,7 +2,7 @@ using API_trip_link.Settings;
 
 namespace API_trip_link.Services.Transit
 {
-    //מחלקה לניהול שגיאות קריאת נתוני ם מהגוגל מפס
+    //מחלקה לניהול שגיאות קריאת נתונים מהגוגל מפס
     public sealed class GoogleMapsApiException : Exception
     {
         public string ApiStatus { get; }
@@ -12,7 +12,7 @@ namespace API_trip_link.Services.Transit
         {
             ApiStatus = apiStatus;
         }
-
+        //הראות המוצגות
         private static string BuildMessage(string apiStatus, string? googleMessage)
         {
             var detail = string.IsNullOrWhiteSpace(googleMessage) ? apiStatus : $"{apiStatus}: {googleMessage}";

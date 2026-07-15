@@ -7,9 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="docs\**" />
+    <Compile Remove="scripts\**" />
     <Compile Remove="trip-planner-app\**" />
+    <Content Remove="docs\**" />
+    <Content Remove="scripts\**" />
     <Content Remove="trip-planner-app\**" />
+    <EmbeddedResource Remove="docs\**" />
+    <EmbeddedResource Remove="scripts\**" />
     <EmbeddedResource Remove="trip-planner-app\**" />
+    <None Remove="docs\**" />
+    <None Remove="scripts\**" />
     <None Remove="trip-planner-app\**" />
   </ItemGroup>
 

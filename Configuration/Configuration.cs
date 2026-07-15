@@ -1,6 +1,6 @@
 namespace API_trip_link.Settings
 {
-    /// <summary>ערכים קבועים מרוכזים לפי שכבות — ללא שינוי לוגיקה.</summary>
+    /// <summary>ערכים קבועים</summary>
     public static class Configuration
     {
         /// <summary>המרות יחידות וערכי בסיס משותפים.</summary>
@@ -20,9 +20,10 @@ namespace API_trip_link.Settings
             public const string RequiredUrlScheme = "https://";
         }
 
-        /// <summary>אלגוריתם האופטימיזציה, טבלת ציונים ו-SA.</summary>
+        // <summary>משתנים קבועים לחישוב אלגוריתם ראשי חישול מדומה</summary>
         public static class Optimizer
         {
+            // <summary>function weight_calculator</summary>
             public const double DefaultDynamicRequirementsWhenNoData = 0.5;
             public const double HardConstraintThreshold = 1.0;
             public const double InvalidOptimalityScore = -1.0;
@@ -47,10 +48,12 @@ namespace API_trip_link.Settings
             public const double DefaultMinReturnHoursFallback = 1.0;
             public const double MinReturnHoursFallbackFloor = 0.0;
             public const double MinReturnHoursFallbackCeiling = 24.0;
-
+            // <summary>score_table</summary>
+            //משתני מקביליות
             public const int DefaultScoreTableConcurrency = 6;
             public const int MinScoreTableConcurrency = 1;
             public const int MaxScoreTableConcurrency = 8;
+
             public const int DefaultEmptyResponseAdvanceMinutes = 1;
             public const int MinEmptyResponseAdvanceMinutes = 1;
             public const int MaxEmptyResponseAdvanceMinutes = 5;
@@ -72,7 +75,7 @@ namespace API_trip_link.Settings
             public const string OriginNodeLabel = "מקור";
             public const string ScoreTableDumpFileName = "score-table-dump.txt";
             public const string EmptyAddressPlaceholder = "(ריק)";
-
+            // <summary>Simulation_anneling</summary>
             public const double SaCoolingRate = 0.003;
             public const double SaMinTemperature = 0.01;
             public const int SaMaxIterations = 1000;
@@ -97,8 +100,8 @@ namespace API_trip_link.Settings
             public const int StepNumberImageEnrichment = 8;
             public const string StepNameEnrich = "ENRICH";
             public const string TraceIdGuidFormat = "N";
-
-            public static readonly IReadOnlyDictionary<int, (double Avg, double Std)> MockVisitStatsByDestinationId =
+            
+            public static readonly IReadOnlyDictionary<int, (double Avg, double Std)> VisitStatsByDestinationId =
                 new Dictionary<int, (double Avg, double Std)>
                 {
                     { 1,  (350, 120) }, { 2,  (200,  40) }, { 3,  (150,  80) },
@@ -108,7 +111,7 @@ namespace API_trip_link.Settings
                 };
         }
 
-        /// <summary>Google Maps / Places API ושירותי תחבורה.</summary>
+        // <summary>Google Maps / Places API ושירותי תחבורה.</summary>
         public static class Transit
         {
             public const string DefaultGoogleMapsBaseUrl = "https://maps.googleapis.com/maps/api";
@@ -144,7 +147,7 @@ namespace API_trip_link.Settings
             public const int DirectBusMaxStops = 0;
         }
 
-        /// <summary>ASP.NET, HTTPS, CORS, Swagger.</summary>
+        // <summary>ASP.NET, HTTPS, CORS, Swagger.</summary>
         public static class Api
         {
             public const string CorsPolicyName = "AllowAngular";
@@ -162,7 +165,7 @@ namespace API_trip_link.Settings
             public const string RouteSavedSuccessMessage = "Route saved successfully";
         }
 
-        /// <summary>תוויות וטקסטים לבניית מסלול (Step6).</summary>
+        // <summary>תוויות וטקסטים לבניית מסלול (Step6).</summary>
         public static class Itinerary
         {
             public const string DefaultVehicleTypeLabel = "תחבורה ציבורית";

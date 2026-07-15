@@ -8,7 +8,7 @@ namespace API_trip_link.Data
     public class TripContext : DbContext
     {
         public TripContext(DbContextOptions<TripContext> options) : base(options) { }
-        // ─── DbSets ───────────────────────────────────────────────────────────────
+        // ---- DbSets ----
         //טבלאות המסד הנתונים
         public DbSet<Destination>             Destinations             { get; set; }
         public DbSet<DifficultyLevel>         DifficultyLevels         { get; set; }
@@ -32,7 +32,7 @@ namespace API_trip_link.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // ─── Composite Keys ───────────────────────────────────────────────────
+            // ---- Composite Keys ----
 
             modelBuilder.Entity<CategoriesOfDestination>()
                 .HasKey(c => new { c.CategoriesId, c.DesId });
@@ -49,105 +49,105 @@ namespace API_trip_link.Data
             modelBuilder.Entity<StationToDestination>()
                 .HasKey(s => new { s.DesId, s.StationNum });
 
-            // ─── Relationships ────────────────────────────────────────────────────
+            // ---- Relationships ----
 
-            // Destination → DifficultyLevel
+            // Destination -> DifficultyLevel
             modelBuilder.Entity<Destination>()
                 .HasOne(d => d.DifficultyLevel)
                 .WithMany(dl => dl.Destinations)
                 .HasForeignKey(d => d.LevelId);
 
-            // Destination → TypeTraveler
+            // Destination -> TypeTraveler
             modelBuilder.Entity<Destination>()
                 .HasOne(d => d.TypeTraveler)
                 .WithMany(t => t.Destinations)
                 .HasForeignKey(d => d.TravelerId);
 
-            // CategoriesOfDestination → Destination
+            // CategoriesOfDestination --> Destination
             modelBuilder.Entity<CategoriesOfDestination>()
                 .HasOne(c => c.Destination)
                 .WithMany(d => d.CategoriesOfDestinations)
                 .HasForeignKey(c => c.DesId);
 
-            // CategoriesOfDestination → Category
+            // CategoriesOfDestination -> Category
             modelBuilder.Entity<CategoriesOfDestination>()
                 .HasOne(c => c.Category)
                 .WithMany(cat => cat.CategoriesOfDestinations)
                 .HasForeignKey(c => c.CategoriesId);
 
-            // StationToDestination → Destination
+            // StationToDestination -> Destination
             modelBuilder.Entity<StationToDestination>()
                 .HasOne(s => s.Destination)
                 .WithMany(d => d.StationToDestinations)
                 .HasForeignKey(s => s.DesId);
 
-            // StationToDestination → Station
+            // StationToDestination -> Station
             modelBuilder.Entity<StationToDestination>()
                 .HasOne(s => s.Station)
                 .WithMany(st => st.StationToDestinations)
                 .HasForeignKey(s => s.StationNum);
 
-            // BusStation → Bus
+            // BusStation -> Bus
             modelBuilder.Entity<BusStation>()
                 .HasOne(bs => bs.Bus)
                 .WithMany(b => b.BusStations)
                 .HasForeignKey(bs => bs.BusId);
 
-            // BusStation → Station
+            // BusStation -> Station
             modelBuilder.Entity<BusStation>()
                 .HasOne(bs => bs.Station)
                 .WithMany(s => s.BusStations)
                 .HasForeignKey(bs => bs.StationId);
 
-            // Trip → User
+            // Trip -> User
             modelBuilder.Entity<Trip>()
                 .HasOne(t => t.User)
                 .WithMany(u => u.Trips)
                 .HasForeignKey(t => t.UserId);
 
-            // DesOfTrip → Trip
+            // DesOfTrip -> Trip
             modelBuilder.Entity<DesOfTrip>()
                 .HasOne(d => d.Trip)
                 .WithMany(t => t.DesOfTrips)
                 .HasForeignKey(d => d.TripId);
 
-            // DesOfTrip → Destination
+            // DesOfTrip -> Destination
             modelBuilder.Entity<DesOfTrip>()
                 .HasOne(d => d.Destination)
                 .WithMany(dest => dest.DesOfTrips)
                 .HasForeignKey(d => d.DesId);
 
-            // CategoriesToTrip → Category
+            // CategoriesToTrip -> Category
             modelBuilder.Entity<CategoriesToTrip>()
                 .HasOne(c => c.Category)
                 .WithMany(cat => cat.CategoriesToTrips)
                 .HasForeignKey(c => c.CategoriesId);
 
-            // CategoriesToTrip → Trip
+            // CategoriesToTrip -> Trip
             modelBuilder.Entity<CategoriesToTrip>()
                 .HasOne(c => c.Trip)
                 .WithMany(t => t.CategoriesToTrips)
                 .HasForeignKey(c => c.TripId);
 
-            // FeatureToTrip → FeatureType
+            // FeatureToTrip -> FeatureType
             modelBuilder.Entity<FeatureToTrip>()
                 .HasOne(f => f.FeatureType)
                 .WithMany(ft => ft.FeatureToTrips)
                 .HasForeignKey(f => f.FeatureId);
 
-            // FeatureToTrip → Trip
+            // FeatureToTrip -> Trip
             modelBuilder.Entity<FeatureToTrip>()
                 .HasOne(f => f.Trip)
                 .WithMany(t => t.FeatureToTrips)
                 .HasForeignKey(f => f.TripId);
 
-            // NatureTrip → Trip
+            // NatureTrip -> Trip
             modelBuilder.Entity<NatureTrip>()
                 .HasOne(n => n.Trip)
                 .WithMany(t => t.NatureTrips)
                 .HasForeignKey(n => n.TripId);
 
-            // NatureTrip → DifficultyLevel
+            // NatureTrip -> DifficultyLevel
             modelBuilder.Entity<NatureTrip>()
                 .HasOne(n => n.DifficultyLevel)
                 .WithMany(dl => dl.NatureTrips)

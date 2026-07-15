@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Threading;
 
 using API_trip_link.Settings;
-
+//מחלקה העוקבת אחר ריצת האלגוריתם הראשי
 namespace API_trip_link.Services.Optimizer.Instrumentation
 {
     internal enum UsageScope
@@ -21,7 +21,7 @@ namespace API_trip_link.Services.Optimizer.Instrumentation
         private readonly ConcurrentDictionary<CellKey, byte> _uniqueCells = new();
         private readonly ConcurrentDictionary<int, long> _fromHeatmap = new();
         private readonly ConcurrentDictionary<int, long> _toHeatmap = new();
-        private readonly ConcurrentDictionary<int, long> _minuteHeatmap = new();
+         private readonly ConcurrentDictionary<int, long> _minuteHeatmap = new();
         private readonly ConcurrentDictionary<int, SaIterationStats> _saIterations = new();
         private long _totalReads;
         private long _validReads;

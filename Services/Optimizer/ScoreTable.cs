@@ -32,7 +32,7 @@ namespace API_trip_link.Services.Optimizer
         public int HourCount => MinuteCount;
         public int EventCellCount => _events.Values.Sum(events => events.Count);
         public ScoreTableUsageInstrumentation? Instrumentation => _instrumentation;
-
+        //בנית התחלקה 
         public ScoreTable(
             Dictionary<(int From, int To), List<TransitEvent>> events,
             List<OptimizerDestination> destinations,
@@ -40,6 +40,7 @@ namespace API_trip_link.Services.Optimizer
             int minuteCount,
             ScoreTableUsageInstrumentation? instrumentation = null)
         {
+            //מיון זמן יציאה וציון גבוה
             _events = events.ToDictionary(
                 pair => pair.Key,
                 pair => pair.Value
@@ -52,10 +53,10 @@ namespace API_trip_link.Services.Optimizer
             NodeCount = destinations.Count + 1;
             MinuteCount = minuteCount;
         }
-
+        //חלון הזמן של הטיול
         public static int ComputeMinuteCount(DateTime tripStart, DateTime tripEnd)
             => Math.Max(Configuration.Common.MinTripMinuteCount, (int)(tripEnd - tripStart).TotalMinutes + 1);
-
+        //המרת שעה לאינדקס
         public static int TimeToMinuteIndexStatic(DateTime time, DateTime tripStart, int minuteCount)
         {
             int m = (int)Math.Floor((time - tripStart).TotalMinutes);
@@ -66,16 +67,16 @@ namespace API_trip_link.Services.Optimizer
             => TimeToMinuteIndexStatic(time, _tripStart, MinuteCount);
 
         public int TimeToHourIndex(DateTime time) => TimeToMinuteIndex(time);
-
+        //ולהפך המרת אינדקס לדקה שעה
         public DateTime MinuteIndexToTime(int minuteIndex)
             => _tripStart.AddMinutes(Math.Clamp(minuteIndex, 0, MinuteCount - 1));
-
+        //המרה לאינדקס במטריצה
         public int DestIdToIndex(int destId)
         {
             int idx = _destinations.FindIndex(d => d.DestinationId == destId);
             return idx < 0 ? -1 : idx + 1;
         }
-
+        //השמה בתא 
         public ArcTransitionRecord Get(int i, int j, int m)
         {
             i = Math.Clamp(i, 0, NodeCount - 1);
@@ -87,10 +88,10 @@ namespace API_trip_link.Services.Optimizer
             _instrumentation?.RecordGet(i, j, m, cell != null && cell.TransitionScore >= 0, cell?.IsValid == true);
             return cell ?? InvalidRecord();
         }
-
+        // האירוע התקף הבא מזמן מסוים
         public ArcTransitionRecord? GetNextAvailable(int fromIndex, int toIndex, DateTime currentTime)
             => GetNextEvent(fromIndex, toIndex, currentTime)?.Record;
-
+        //זמן חזרה מינימלי
         public double? GetFastestReturnTime(int destinationId)
         {
             int fromIndex = DestIdToIndex(destinationId);
@@ -103,7 +104,7 @@ namespace API_trip_link.Services.Optimizer
                 .Select(e => (double?)e.Record.ArcCost.TotalArcHours)
                 .Min();
         }
-
+        //בחירת היעד עם הציון הגבוה ביותר בעמודה בדקה מסוימת
         public (OptimizerDestination Dest, ArcCost Arc, double Score)? GetBestInColumn(
             int fromIndex,
             int minuteIndex,
@@ -143,7 +144,7 @@ namespace API_trip_link.Services.Optimizer
             _instrumentation?.RecordGetBestInColumnResult(hit);
             return hit ? (bestDest!, bestArc!, bestScore) : null;
         }
-
+        //התא התקף הקרוב ביותר לדקה מסוימת
         public ArcTransitionRecord? FindNearestValidCell(
             int fromIndex,
             int toIndex,
@@ -185,13 +186,13 @@ namespace API_trip_link.Services.Optimizer
             _instrumentation?.RecordFindNearestResult(best != null, bestDistance == int.MaxValue ? searchRadius : bestDistance, searched);
             return best?.Record;
         }
-
+        //מחזירה רשימת כל האירועים
         public List<ScoreTableCellTraceDto> EnumerateFilledCells()
             => EnumerateCells(validOnly: false);
 
         public List<ScoreTableCellTraceDto> EnumerateValidCells()
             => EnumerateCells(validOnly: true);
-
+        //כמה אירועים תקפים
         public (int TotalCells, int ValidCells) GetStats()
         {
             int total = EventCellCount;
@@ -210,7 +211,7 @@ namespace API_trip_link.Services.Optimizer
             if (index == OriginIndex) return Configuration.Optimizer.OriginNodeLabel;
             return _destinations[index - 1].Name;
         }
-
+        //קובץ לוג לדיבוג על האירועים שתקפים
         public void DumpToFile(string path)
         {
             var stats = GetStats();
@@ -234,12 +235,12 @@ namespace API_trip_link.Services.Optimizer
 
             File.WriteAllText(path, string.Join(Environment.NewLine, lines));
         }
-
+        //פונקציה המחזירה את האירוע התקף הבא לאחר זמן מסוים
         private TransitEvent? GetNextEvent(int fromIndex, int toIndex, DateTime currentTime)
         {
             if (!_events.TryGetValue((fromIndex, toIndex), out var events) || events.Count == 0)
                 return null;
-
+            //מבצעת חיפוש בינארי להקטין סיבוכיות
             var left = 0;
             var right = events.Count - 1;
             var bestIndex = -1;
@@ -266,7 +267,7 @@ namespace API_trip_link.Services.Optimizer
 
             return null;
         }
-
+        //לדיבוג
         private TransitEvent? GetEventAtExactMinute(int fromIndex, int toIndex, DateTime targetTime)
         {
             if (!_events.TryGetValue((fromIndex, toIndex), out var events) || events.Count == 0)
@@ -275,7 +276,7 @@ namespace API_trip_link.Services.Optimizer
             return events.FirstOrDefault(e =>
                 TimeToMinuteIndex(e.DepartureTime) == TimeToMinuteIndex(targetTime));
         }
-
+        //המרת כל האירועים לאובייקט המתאים לטבלת ציון
         private List<ScoreTableCellTraceDto> EnumerateCells(bool validOnly)
         {
             return _events
@@ -306,7 +307,7 @@ namespace API_trip_link.Services.Optimizer
                 .ThenBy(r => r.H)
                 .ToList();
         }
-
+        //רשומה המיצגת תא לא קיים
         private static ArcTransitionRecord InvalidRecord()
             => new()
             {

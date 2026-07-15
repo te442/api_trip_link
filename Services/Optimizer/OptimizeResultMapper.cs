@@ -11,7 +11,7 @@ namespace API_trip_link.Services.Optimizer
             var bestRoute = ctx.BestRoute;
             var plan      = ctx.TripPlan;
             var destLookup = ctx.Destinations.ToDictionary(d => d.DestinationId);
-
+            //רשימת יעדים
             var resultDests = bestRoute.Destinations.Select(d => new DestinationDto
             {
                 DesId   = d.DestinationId,
@@ -21,7 +21,7 @@ namespace API_trip_link.Services.Optimizer
                 Lat     = destLookup.TryGetValue(d.DestinationId, out var od) ? (decimal?)od.Latitude : null,
                 Lon     = destLookup.TryGetValue(d.DestinationId, out var od2) ? (decimal?)od2.Longitude : null
             }).ToList();
-
+            //רשימת עלויות קשתות
             var arcCostDtos = bestRoute.ArcCosts.Select(a => new ArcCostDto
             {
                 FromDestinationId  = a.FromDestinationId,
@@ -46,7 +46,7 @@ namespace API_trip_link.Services.Optimizer
                 legs,
                 destLookup);
             var scoreStats = BuildScoreTableStats(ctx);
-
+            //החזרת אובייקט התוצאה
             return new OptimizeResultDto
             {
                 TripId            = ctx.Request.TripId,
@@ -67,7 +67,7 @@ namespace API_trip_link.Services.Optimizer
                 ScoreTableCellTrace = ctx.ScoreTableCellTrace
             };
         }
-
+        //פונקציה אחראית לבנות את נתוני טבלה תלת מימדית
         private static ScoreTableStatsDto? BuildScoreTableStats(OptimizationContext ctx)
         {
             if (ctx.ScoreTable == null) return null;
@@ -85,7 +85,7 @@ namespace API_trip_link.Services.Optimizer
                 Description = $"Event store דליל: {total} אירועי תחבורה מתוך קיבולת לוגית {ctx.ScoreTable.GetLogicalCellCapacity()}"
             };
         }
-
+        //מבנה להצגת מסלול
         public static TripItineraryDto ToItineraryDto(OptimizeResultDto result) => new()
         {
             TripId            = result.TripId,
@@ -101,7 +101,7 @@ namespace API_trip_link.Services.Optimizer
             ReturnLeg         = result.ReturnLeg,
             MapPoints         = result.MapPoints
         };
-
+        //רשימת מעברים בטיול
         private static List<TripLegDto> MapLegs(
             List<TripLeg> legs,
             Dictionary<int, OptimizerDestination> destLookup,
@@ -109,7 +109,7 @@ namespace API_trip_link.Services.Optimizer
         {
             return legs.Select(leg => MapLeg(leg, destLookup)).ToList();
         }
-
+        //פונקציה יוצרת לכל מעבר את כל הפרטים המלאים 
         private static TripLegDto MapLeg(
             TripLeg leg,
             Dictionary<int, OptimizerDestination> destLookup)
@@ -150,7 +150,7 @@ namespace API_trip_link.Services.Optimizer
                 }
             };
         }
-
+        //כל נקודת עצירה בטיול 
         private static List<MapPointDto> BuildMapPoints(
             string addressStart,
             double startLatitude,
@@ -187,7 +187,7 @@ namespace API_trip_link.Services.Optimizer
 
             return points;
         }
-
+        //המרה לפורמט זמן תקין
         private static string FormatDuration(TimeSpan ts)
         {
             var h = (int)ts.TotalHours;

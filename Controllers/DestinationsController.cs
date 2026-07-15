@@ -11,10 +11,7 @@ namespace API_trip_link.Controllers
     [Route("api/[controller]")]
     public class DestinationsController : ControllerBase
     {
-        //שירותי היעדים
         private readonly DestinationService _service;
-
-        //פעולה בונה שמקבלת את השירותים ומציבה אותם במשתנים הפרימיטיביים
         public DestinationsController(DestinationService service)
         {
             _service = service;
@@ -25,7 +22,6 @@ namespace API_trip_link.Controllers
         //פעולה המחזירה את כל היעדים
         public async Task<ActionResult<List<DestinationDto>>> GetAll()
         {
-            //פעולה אסינכרונית המחזירה תגובת שרת
             return Ok(await _service.GetAllAsync());
         }
         //פעולה המחזירה יעד לפי מזהה
@@ -33,7 +29,6 @@ namespace API_trip_link.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<DestinationDto>> GetById(int id)
         {
-            //פעולה אסינכרונית המחזירה תגובת שרת
             var dest = await _service.GetByIdAsync(id);
             if (dest == null) return NotFound();
             return Ok(dest);

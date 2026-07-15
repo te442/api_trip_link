@@ -3,6 +3,7 @@ using API_trip_link.Services.Optimizer.Steps;
 
 namespace API_trip_link.Services.Optimizer
 {
+
     internal class OptimizerPipeline
     {
         private readonly IReadOnlyList<IOptimizerStep> _steps;

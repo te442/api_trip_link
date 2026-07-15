@@ -10,6 +10,6 @@ namespace API_trip_link.Data.Repositories
             int? levelId,
             IReadOnlySet<int> categoryIds,
             IReadOnlySet<int> featureIds);
-        Task<List<BusStation>> GetBusLinesForStationAsync(int stationNum, int take = 3);
+        Task<List<BusStation>> GetBusLinesForStationAsync(int stationNum, int take = 3);//max 3 bus of each station
     }
 }

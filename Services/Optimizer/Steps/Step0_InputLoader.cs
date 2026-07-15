@@ -42,7 +42,7 @@ namespace API_trip_link.Services.Optimizer.Steps
 
             ctx.TripName   = trip.TripName ?? "";
             ctx.TripRegion = region ?? "";
-
+            //רשימה קטגוריות ומאפיינים
             var tripCategoryIds = trip.CategoriesToTrips?
                 .Select(c => c.CategoriesId)
                 .ToHashSet() ?? new HashSet<int>();
@@ -54,8 +54,7 @@ namespace API_trip_link.Services.Optimizer.Steps
             //נותן רשימת יעדים מסוננים לפי אילוצים קשים
             var dbDestinations = await _data.GetDestinationsForOptimizationAsync(
                 region, levelId, tripCategoryIds, tripFeatureIds);
-            //-------------------------------להוריד/לשנות----------------
-            var mockStats = Configuration.Optimizer.MockVisitStatsByDestinationId;
+            var visitStats = Configuration.Optimizer.VisitStatsByDestinationId;
             //הכנת אובייקט יעד כולל פרטים לאלגוריתם הראשי
             ctx.Destinations = dbDestinations.Select(d =>
             {
@@ -71,7 +70,7 @@ namespace API_trip_link.Services.Optimizer.Steps
                     ? d.TimeDes.Value.TotalHours
                     : Configuration.Optimizer.DefaultVisitDurationHours;
 
-                var (avg, std) = mockStats.TryGetValue(d.DesId, out var s) ? s : (Configuration.Optimizer.DefaultVisitCountAvg, Configuration.Optimizer.DefaultVisitCountStd);
+                var (avg, std) = visitStats.TryGetValue(d.DesId, out var s) ? s : (Configuration.Optimizer.DefaultVisitCountAvg, Configuration.Optimizer.DefaultVisitCountStd);
                 double dynReq  = WeightCalculator.ComputeDynamicRequirements(avg, std);
 
                 StationInfo? stationInfo = null;
@@ -129,7 +128,7 @@ namespace API_trip_link.Services.Optimizer.Steps
                 var filterDesc = parts.Count > 0 ? string.Join(", ", parts) : "ללא מסננים";
                 throw new Exception($"לא נמצאו יעדים התואמים לטיול ({filterDesc}). נסי לשנות אזור, רמת קושי, קטגוריות או מאפיינים.");
             }
-
+            //מסגרת זמן הטיול
             double maxTimeFrame = (request.TripEndTime - request.TripStartTime).TotalHours;
             var (tripStart, tripEnd, scheduleNote) =
                 TripScheduleDateHelper.ClampForGoogleTransit(request.TripStartTime, request.TripEndTime);
@@ -152,7 +151,7 @@ namespace API_trip_link.Services.Optimizer.Steps
                 Configuration.Optimizer.MinReturnHoursFallbackFloor,
                 Configuration.Optimizer.MinReturnHoursFallbackCeiling);
 
-            //הכנת אובייקט פרמטרים  לאלגוריתם הראשי (זמני נסיעה/חזרה מה-UI בדקות → שעות)
+            //אובייקט פרמטרים לאלגוריתם ראשי
             ctx.Params = new OptimizerParams
             {
                 TripStartTime        = tripStart,
@@ -165,7 +164,7 @@ namespace API_trip_link.Services.Optimizer.Steps
                 MaxNumDes            = maxNumDes,
                 AddressStart         = trip.AddressStart ?? ""
             };
-
+            //--הדפסת לוגים---
             AgentDebugLog.Write("Step0_InputLoader.cs:136", "Input loaded for score table",
                 new { ctx.Destinations.Count, maxTimeFrame, request.TripId, MinTransitEfficiency = minTransitEfficiency },
                 "H4");

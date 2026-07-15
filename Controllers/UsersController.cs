@@ -11,10 +11,7 @@ namespace API_trip_link.Controllers
     //קונטרולר המנהל את המשתמשים
     public class UsersController : ControllerBase
     {
-        //שירותי המשתמשים
         private readonly UserService _service;
-
-        //פעולה בונה שמקבלת את השירותים ומציבה אותם במשתנים הפרימיטיביים
         public UsersController(UserService service)
         {
             _service = service;
@@ -25,7 +22,6 @@ namespace API_trip_link.Controllers
         //פעולה המחזירה את כל המשתמשים
         public async Task<ActionResult<List<UserDto>>> GetAll()
         {
-            //פעולה אסינכרונית המחזירה תגובת שרת
             return Ok(await _service.GetAllAsync());
         }
 
@@ -34,7 +30,6 @@ namespace API_trip_link.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<UserDto>> GetById(string id)
         {
-            //פעולה אסינכרונית המחזירה תגובת שרת
             var user = await _service.GetByIdAsync(id);
             if (user == null) return NotFound();
             return Ok(user);
@@ -45,7 +40,6 @@ namespace API_trip_link.Controllers
         //מקבלת אובייקט מסוג CreateUserDto ומוסיפה אותו לבסיס הנתונים
         public async Task<ActionResult<UserDto>> Create([FromBody] CreateUserDto dto)
         {
-            //פעולה אסינכרונית המוסיפה אובייקט מסוג CreateUserDto לבסיס הנתונים
             var user = await _service.CreateAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = user.UserId }, user);
         }

@@ -4,6 +4,7 @@ using API_trip_link.Services.Transit;
 
 namespace API_trip_link.Services.Optimizer
 {
+    //מחלקה אחראית על חישוב עלות הקשת בין שני יעדים
     internal class ArcCostCalculator
     {
         private readonly ITransitApiService _transitApi;
@@ -38,7 +39,8 @@ namespace API_trip_link.Services.Optimizer
                 departureTime: nominalDeparture);
                 //חישוב יעילות תחבורה
             double efficiency = (result.BusTransitHours > 0 && result.CarTransitHours > 0)
-                ? Math.Max(Configuration.Common.ScoreMin, Math.Min(Configuration.Common.ScoreMax, result.CarTransitHours / result.BusTransitHours))
+                ? Math.Max(Configuration.Common.ScoreMin, Math.Min(Configuration.Common.ScoreMax, 
+                result.CarTransitHours / result.BusTransitHours))
                 : 0;
 
             return new ArcCost
